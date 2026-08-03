@@ -61,12 +61,26 @@ def test_to_extracted_defensive_on_partial_payload():
     assert out.overall_readability == 0.5
 
 
+def test_claude_extractor_skips_non_text_blocks(monkeypatch):
+    thinking = SimpleNamespace(type="thinking", thinking="hmm")
+    text = SimpleNamespace(type="text", text=json.dumps(SAMPLE))
+
+    extractor = ClaudeVisionExtractor(api_key="test-key")
+    monkeypatch.setattr(
+        extractor.client.messages,
+        "create",
+        lambda **kw: SimpleNamespace(content=[thinking, text]),
+    )
+    out = extractor.extract(b"img", "image/png", BeverageType.DISTILLED_SPIRITS)
+    assert out.brand_name.value == "RIDGE & RYE"
+
+
 def test_claude_extractor_calls_api_and_parses(monkeypatch):
     captured = {}
 
     def fake_create(**kwargs):
         captured.update(kwargs)
-        return SimpleNamespace(content=[SimpleNamespace(text=json.dumps(SAMPLE))])
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=json.dumps(SAMPLE))])
 
     extractor = ClaudeVisionExtractor(api_key="test-key")
     monkeypatch.setattr(extractor.client.messages, "create", fake_create)

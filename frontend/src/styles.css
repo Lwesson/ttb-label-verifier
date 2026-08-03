@@ -250,3 +250,134 @@ tr.status-review th,
 tr.status-review td {
   background: #fff4e0;
 }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.tab {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 12px 24px;
+  min-height: 48px;
+  border: 2px solid #767676;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #0b57d0;
+  border-color: #0b57d0;
+  color: #ffffff;
+}
+
+.linklike {
+  background: none;
+  border: none;
+  color: #0b57d0;
+  text-decoration: underline;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.batch-pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #c9c9c9;
+  border-radius: 12px;
+  padding: 16px 20px 24px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 540px) {
+  .batch-pickers {
+    grid-template-columns: 1fr;
+  }
+}
+
+.batch-pickers input[type="file"] {
+  width: 100%;
+  font-size: 1rem;
+  padding: 10px;
+  border: 2px dashed #767676;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.progress-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+.progress-text progress {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin-top: 6px;
+}
+
+.summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid #767676;
+  background: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.chip-pass { border-color: #1e7d32; color: #1e5c2a; }
+.chip-review { border-color: #a05a00; color: #7a4400; }
+.chip-fail { border-color: #b3261e; color: #8c1d17; }
+.chip-unreadable { border-color: #444746; color: #444746; }
+.chip-error { border-color: #b3261e; color: #8c1d17; }
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+
+.filter-row input[type="checkbox"] {
+  width: 26px;
+  height: 26px;
+}
+
+.all-clear {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e5c2a;
+}
+
+.batch-list {
+  list-style: none;
+  padding: 0;
+}
+
+.batch-list li {
+  background: #ffffff;
+  border: 1px solid #c9c9c9;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 4px 12px;
+}
+
+.batch-list summary {
+  cursor: pointer;
+  padding: 10px 4px;
+  font-size: 1.05rem;
+}

@@ -39,6 +39,14 @@ def match_text_field(
         )
         return FieldMatch(field=field, expected=expected, extracted=extracted,
                           status=MatchStatus.REVIEW, score=score, reason=reason)
+    partial = fuzz.partial_ratio(norm_text(expected), norm_text(extracted))
+    if partial >= th.fuzzy_match:
+        reason = (
+            f"The label shows part of the expected text ('{extracted}' vs "
+            f"'{expected}'). The photo may be cropped or partly readable. Please confirm."
+        )
+        return FieldMatch(field=field, expected=expected, extracted=extracted,
+                          status=MatchStatus.REVIEW, score=score, reason=reason)
     return FieldMatch(
         field=field, expected=expected, extracted=extracted,
         status=MatchStatus.MISMATCH, score=score,

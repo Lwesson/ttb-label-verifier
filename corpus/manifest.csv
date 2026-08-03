@@ -8,4 +8,9 @@ abv_mismatch.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey
 net_contents_700.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail,Net contents 700 mL vs application 750 mL
 table_wine.png,wine,MEADOWLARK CELLARS,Red Table Wine,12,750,false,,pass,Table wine ABV exception: no numeric ABV is compliant
 proof_inconsistent.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,review,"Proof does not equal 2 x ABV, internal consistency check"
+warning_not_bold.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail|review,"GOVERNMENT WARNING not bold, best-effort visual check"
 import_no_country.png,distilled_spirits,GLEN MORRIG,Single Malt Scotch Whisky,43,750,true,Scotland,fail,Imported spirit missing country of origin
+blurry_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,unreadable|review,"Badly blurred photo, graceful degradation"
+glare_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,review|unreadable,Heavy glare over the warning area
+angled_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,review|unreadable,Photo taken at a sharp angle
+dim_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,review|unreadable,"Dark, low-contrast photo"

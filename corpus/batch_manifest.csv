@@ -1,0 +1,16 @@
+filename,beverage_type,brand_name,class_type,abv_percent,net_contents,name_address,country_of_origin,is_import
+clean_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+stones_throw.png,distilled_spirits,Stone's Throw,Straight Rye Whiskey,46,750 mL,,,false
+warning_title_case.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+warning_reworded.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+warning_missing.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+abv_mismatch.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+net_contents_700.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+table_wine.png,wine,MEADOWLARK CELLARS,Red Table Wine,12,750 mL,,,false
+proof_inconsistent.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+warning_not_bold.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+import_no_country.png,distilled_spirits,GLEN MORRIG,Single Malt Scotch Whisky,43,750 mL,,Scotland,true
+blurry_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+glare_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+angled_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false
+dim_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750 mL,,,false

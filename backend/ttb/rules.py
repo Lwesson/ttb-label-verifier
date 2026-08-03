@@ -44,6 +44,8 @@ class Thresholds:
     net_contents_tolerance_ml: float = 5.0  # covers fl oz conversion rounding
     conf_unreadable: float = 0.35    # below: whole image is UNREADABLE
     conf_review: float = 0.60        # below: a matched field still gets REVIEW
+    warning_trust: float = 0.80      # warning FAILs read below this confidence become REVIEW
+    readability_trust: float = 0.70  # missing warning on an image below this becomes REVIEW
 
 
 def required_fields(beverage_type: BeverageType, is_import: bool) -> list[str]:

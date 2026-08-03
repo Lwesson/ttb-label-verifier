@@ -145,6 +145,56 @@ def test_low_confidence_field_downgrades_to_review():
     assert r.verdict == Verdict.REVIEW
 
 
+def test_garbled_warning_read_at_low_confidence_is_review_not_fail():
+    text = CANONICAL_WARNING.replace("birth defects", "brth dfects")
+    r = verify(
+        spirits_expected(),
+        make_extraction(warning_text=f(text, confidence=0.55)),
+    )
+    assert r.verdict == Verdict.REVIEW
+    assert any("clearer photo" in reason.lower() for reason in r.reasons)
+
+
+def test_unreadable_warning_area_is_review_not_fail():
+    r = verify(
+        spirits_expected(),
+        make_extraction(warning_text=f(None, confidence=0.1), overall_readability=0.5),
+    )
+    assert r.verdict == Verdict.REVIEW
+    assert any("clearer photo" in reason.lower() for reason in r.reasons)
+
+
+def test_crisp_missing_warning_still_fails():
+    r = verify(spirits_expected(), make_extraction(warning_text=f(None)))
+    assert r.verdict == Verdict.FAIL
+
+
+def test_glare_obscured_warning_is_review_even_when_rest_is_readable():
+    r = verify(
+        spirits_expected(),
+        make_extraction(warning_text=f(None, confidence=0.3), overall_readability=0.8),
+    )
+    assert r.verdict == Verdict.REVIEW
+    assert any("clearer photo" in reason.lower() for reason in r.reasons)
+
+
+def test_unreadable_required_field_on_bad_photo_is_review_not_fail():
+    r = verify(
+        spirits_expected(),
+        make_extraction(brand_name=f(None, confidence=0.3), overall_readability=0.65),
+    )
+    assert r.verdict == Verdict.REVIEW
+    assert any("clearer" in reason.lower() for reason in r.reasons)
+
+
+def test_confidently_absent_required_field_still_fails():
+    r = verify(
+        spirits_expected(is_import=True),
+        make_extraction(country_of_origin=f(None, confidence=0.0)),
+    )
+    assert r.verdict == Verdict.FAIL
+
+
 def test_headlines_copy():
     assert HEADLINES[Verdict.PASS] == "Looks good"
     assert HEADLINES[Verdict.REVIEW] == "Please review"

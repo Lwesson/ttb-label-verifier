@@ -58,7 +58,10 @@ like "Scotch", "Cognac", or "Tequila" are NOT a country-of-origin statement.
 - Each "confidence" is how clearly you can read that field in THIS image.
 - "overall_readability": 1.0 means crisp and fully readable; below 0.4 means \
 too blurry, glared, or angled to trust.
-- "prefix_bold" is whether the words GOVERNMENT WARNING appear bold; \
+- "prefix_bold": compare the STROKE THICKNESS of the words GOVERNMENT WARNING \
+against the rest of the warning text. Only report true if the strokes are \
+visibly thicker. Capital letters are NOT the same thing as bold; if the \
+strokes are the same thickness or thinner than the rest, report false. \
 "remainder_bold" is whether the rest of the warning appears bold.
 """
 
@@ -146,8 +149,15 @@ class ClaudeVisionExtractor(VisionExtractor):
                     f"The vision service is unavailable right now ({e.__class__.__name__}). "
                     "Please try again."
                 ) from e
+            text = next(
+                (b.text for b in message.content if getattr(b, "type", None) == "text"),
+                None,
+            )
+            if text is None:
+                last_error = ValueError("No text block in model response")
+                continue
             try:
-                return _to_extracted(_parse_json(message.content[0].text))
+                return _to_extracted(_parse_json(text))
             except (ValueError, json.JSONDecodeError) as e:
                 last_error = e
         raise ExtractionError(

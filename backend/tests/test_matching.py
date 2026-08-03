@@ -26,6 +26,14 @@ def test_different_text_is_mismatch():
     assert m.status == MatchStatus.MISMATCH
 
 
+def test_partial_read_of_expected_text_is_review_not_mismatch():
+    m = match_text_field(
+        "class_type", "Kentucky Straight Bourbon Whiskey", "Straight Bourbon", TH
+    )
+    assert m.status == MatchStatus.REVIEW
+    assert "part" in m.reason.lower()
+
+
 def test_missing_and_not_applicable():
     assert match_text_field("class_type", "Bourbon", None, TH).status == MatchStatus.MISSING
     assert match_text_field("class_type", None, "Bourbon", TH).status == MatchStatus.NOT_APPLICABLE

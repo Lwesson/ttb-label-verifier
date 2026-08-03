@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { verifyLabel } from "./api.js";
+import BatchView from "./BatchView.jsx";
 import ResultView from "./ResultView.jsx";
 
 const BEVERAGE_TYPES = [
@@ -22,6 +23,7 @@ const EMPTY_FORM = {
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
 
 export default function App() {
+  const [mode, setMode] = useState("single");
   const [form, setForm] = useState(EMPTY_FORM);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -79,6 +81,32 @@ export default function App() {
   return (
     <main className="page">
       <h1>TTB Label Verifier</h1>
+
+      <div className="tabs" role="tablist" aria-label="Verification mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "single"}
+          className={mode === "single" ? "tab active" : "tab"}
+          onClick={() => setMode("single")}
+        >
+          One label
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "batch"}
+          className={mode === "batch" ? "tab active" : "tab"}
+          onClick={() => setMode("batch")}
+        >
+          Batch
+        </button>
+      </div>
+
+      {mode === "batch" ? (
+        <BatchView />
+      ) : (
+        <>
       <p className="lede">
         Add a photo of the label, enter what the application says, then press
         Verify label.
@@ -233,6 +261,8 @@ export default function App() {
         )}
         {result && <ResultView result={result} />}
       </div>
+        </>
+      )}
     </main>
   );
 }

@@ -38,6 +38,16 @@ _TYPE_LABELS = {
 }
 
 
+def _presence_uncertain(extraction: ExtractedLabel, field: str, th: Thresholds) -> bool:
+    """A required field that could not be READ is not the same as one that is
+    absent. Low overall readability, or a low-but-nonzero field confidence,
+    means the honest answer is a better photo, not a violation."""
+    if extraction.overall_readability < th.readability_trust:
+        return True
+    conf = getattr(extraction, field).confidence
+    return 0.0 < conf < th.conf_review
+
+
 def verify(
     expected: ExpectedValues,
     extraction: ExtractedLabel,
@@ -128,15 +138,38 @@ def verify(
 
     warning_result = validate_warning(extraction)
 
-    hard_fail = warning_result.status == CheckStatus.FAIL
-    needs_review = warning_result.status == CheckStatus.REVIEW or proof_note is not None
+    # Trust gate: a warning violation is only a violation if the warning was
+    # actually READ clearly. A garbled or invisible warning on a bad photo is
+    # a reason to request a better image, not a compliance finding.
+    warning_uncertain = False
+    if warning_result.status == CheckStatus.FAIL:
+        failed = {c.name for c in warning_result.checks if c.status == CheckStatus.FAIL}
+        if "presence" in failed:
+            # Absent at high confidence on a readable image is a violation;
+            # absent at low confidence (glare, damage) is an unreadable area.
+            warning_uncertain = (
+                extraction.overall_readability < th.readability_trust
+                or extraction.warning_text.confidence < th.warning_trust
+            )
+        else:
+            warning_uncertain = extraction.warning_text.confidence < th.warning_trust
+
+    hard_fail = warning_result.status == CheckStatus.FAIL and not warning_uncertain
+    needs_review = (
+        warning_result.status == CheckStatus.REVIEW
+        or warning_uncertain
+        or proof_note is not None
+    )
+    unread_required = False
     for m in matches:
         if m.status == MatchStatus.MISMATCH:
             hard_fail = True
         elif m.status == MatchStatus.MISSING:
-            if m.field in required:
+            if m.field in required and not _presence_uncertain(extraction, m.field, th):
                 hard_fail = True
             else:
+                if m.field in required:
+                    unread_required = True
                 needs_review = True
         elif m.status == MatchStatus.REVIEW:
             needs_review = True
@@ -147,9 +180,20 @@ def verify(
             reasons.append(f"{FIELD_LABELS[m.field]}: {m.reason}")
     if proof_note:
         reasons.append(f"Alcohol content: {proof_note}")
-    for c in warning_result.checks:
-        if c.status in (CheckStatus.FAIL, CheckStatus.REVIEW):
-            reasons.append(f"Warning {c.name}: {c.detail}")
+    if unread_required:
+        reasons.append(
+            "Some required text could not be read clearly in this photo. "
+            "Please request a clearer image before treating it as missing."
+        )
+    if warning_uncertain:
+        reasons.append(
+            "Warning: the warning statement could not be read clearly enough to "
+            "verify. Please request a clearer photo before treating this as a violation."
+        )
+    else:
+        for c in warning_result.checks:
+            if c.status in (CheckStatus.FAIL, CheckStatus.REVIEW):
+                reasons.append(f"Warning {c.name}: {c.detail}")
 
     if hard_fail:
         verdict = Verdict.FAIL

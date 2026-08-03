@@ -9,7 +9,7 @@ import csv
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from ttb.rules import CANONICAL_WARNING  # noqa: E402
@@ -17,6 +17,7 @@ from ttb.rules import CANONICAL_WARNING  # noqa: E402
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
 REGULAR = str(FONT_DIR / "DejaVuSans.ttf")
 BOLD = str(FONT_DIR / "DejaVuSans-Bold.ttf")
+EXTRALIGHT = str(FONT_DIR / "DejaVuSans-ExtraLight.ttf")
 
 OUT = Path(__file__).parent / "images"
 W, H = 1000, 1400
@@ -89,7 +90,9 @@ def render_label(
         wbold = ImageFont.truetype(BOLD, 26)
         head, sep, rest = warning.partition(":")
         if sep:
-            head_font = wbold if warning_bold_prefix else wfont
+            # Non-bold case uses the ExtraLight face so the missing bold weight
+            # is visually unambiguous, not a subtle regular-vs-bold judgment.
+            head_font = wbold if warning_bold_prefix else ImageFont.truetype(EXTRALIGHT, 26)
             tokens = [(t, head_font) for t in (head + ":").split()]
             tokens += [(t, wfont) for t in rest.split()]
         else:
@@ -260,6 +263,23 @@ LABELS = [
         ),
     },
     {
+        "filename": "warning_not_bold.png",
+        "render": dict(
+            brand="RIDGE & RYE",
+            class_type="Kentucky Straight Bourbon Whiskey",
+            abv_line="45% Alc./Vol. (90 Proof)",
+            net_contents="750 mL",
+            warning_bold_prefix=False,
+        ),
+        "manifest": dict(
+            beverage_type="distilled_spirits", expected_brand="RIDGE & RYE",
+            expected_class_type="Kentucky Straight Bourbon Whiskey",
+            expected_abv="45", expected_net_ml="750", is_import="false",
+            expected_country="", expected_verdict="fail|review",
+            tests_what="GOVERNMENT WARNING not bold, best-effort visual check",
+        ),
+    },
+    {
         "filename": "import_no_country.png",
         "render": dict(
             brand="GLEN MORRIG",
@@ -285,18 +305,116 @@ MANIFEST_COLUMNS = [
     "expected_verdict", "tests_what",
 ]
 
+_CLEAN_MANIFEST = dict(
+    beverage_type="distilled_spirits", expected_brand="RIDGE & RYE",
+    expected_class_type="Kentucky Straight Bourbon Whiskey",
+    expected_abv="45", expected_net_ml="750", is_import="false",
+    expected_country="",
+)
+
+
+def _degrade_blurry(img):
+    w, h = img.size
+    small = img.resize((w // 12, h // 12))
+    return small.resize((w, h)).filter(ImageFilter.GaussianBlur(8))
+
+
+def _degrade_glare(img):
+    # Opaque white core fully covering the warning panel, hard falloff:
+    # the warning is physically unreadable, the rest of the label is fine.
+    overlay = Image.new("L", img.size, 0)
+    od = ImageDraw.Draw(overlay)
+    cx, cy = int(W * 0.5), H - 200
+    max_r = 620
+    core = int(max_r * 0.55)
+    for r in range(max_r, 0, -4):
+        if r <= core:
+            alpha = 255
+        else:
+            alpha = int(255 * (1 - (r - core) / (max_r - core)) ** 0.8)
+        od.ellipse([cx - r, cy - int(r * 0.55), cx + r, cy + int(r * 0.55)], fill=alpha)
+    white = Image.new("RGB", img.size, "#ffffff")
+    return Image.composite(white, img, overlay).filter(ImageFilter.GaussianBlur(2))
+
+
+def _degrade_angled(img):
+    w, h = img.size
+    warped = img.transform(
+        (w, h),
+        Image.Transform.QUAD,
+        (340, 0, 0, h, w, h - 130, w - 420, 260),
+        fillcolor="#6b6b6b",
+    )
+    warped = warped.filter(ImageFilter.GaussianBlur(3.2))
+    return ImageEnhance.Brightness(warped).enhance(0.72)
+
+
+def _degrade_dim(img):
+    out = ImageEnhance.Brightness(img).enhance(0.10)
+    out = ImageEnhance.Contrast(out).enhance(0.35)
+    return out.filter(ImageFilter.GaussianBlur(2.2))
+
+
+DEGRADATIONS = [
+    ("blurry_bourbon.png", _degrade_blurry, "unreadable|review",
+     "Badly blurred photo, graceful degradation"),
+    ("glare_bourbon.png", _degrade_glare, "review|unreadable",
+     "Heavy glare over the warning area"),
+    ("angled_bourbon.png", _degrade_angled, "review|unreadable",
+     "Photo taken at a sharp angle"),
+    ("dim_bourbon.png", _degrade_dim, "review|unreadable",
+     "Dark, low-contrast photo"),
+]
+
 
 def main():
     for spec in LABELS:
         render_label(spec["filename"], **spec["render"])
         print(f"rendered {spec['filename']}")
+
+    clean = Image.open(OUT / "clean_bourbon.png")
+    degraded_rows = []
+    for filename, fn, expected_verdict, tests_what in DEGRADATIONS:
+        fn(clean).save(OUT / filename)
+        print(f"degraded {filename}")
+        degraded_rows.append({
+            "filename": filename,
+            **_CLEAN_MANIFEST,
+            "expected_verdict": expected_verdict,
+            "tests_what": tests_what,
+        })
+
     manifest_path = Path(__file__).parent / "manifest.csv"
+    all_rows = [
+        {"filename": spec["filename"], **spec["manifest"]} for spec in LABELS
+    ] + degraded_rows
     with open(manifest_path, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=MANIFEST_COLUMNS)
         writer.writeheader()
-        for spec in LABELS:
-            writer.writerow({"filename": spec["filename"], **spec["manifest"]})
+        writer.writerows(all_rows)
     print(f"wrote {manifest_path}")
+
+    batch_path = Path(__file__).parent / "batch_manifest.csv"
+    batch_columns = [
+        "filename", "beverage_type", "brand_name", "class_type", "abv_percent",
+        "net_contents", "name_address", "country_of_origin", "is_import",
+    ]
+    with open(batch_path, "w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=batch_columns)
+        writer.writeheader()
+        for row in all_rows:
+            writer.writerow({
+                "filename": row["filename"],
+                "beverage_type": row["beverage_type"],
+                "brand_name": row["expected_brand"],
+                "class_type": row["expected_class_type"],
+                "abv_percent": row["expected_abv"],
+                "net_contents": f'{row["expected_net_ml"]} mL' if row["expected_net_ml"] else "",
+                "name_address": "",
+                "country_of_origin": row["expected_country"],
+                "is_import": row["is_import"],
+            })
+    print(f"wrote {batch_path}")
 
 
 if __name__ == "__main__":
