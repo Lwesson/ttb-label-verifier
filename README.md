@@ -16,7 +16,7 @@ Every label gets one of four verdicts, always shown as an icon, a word, and a co
 Two modes:
 
 - **One label**: drop in a photo, enter the application values, get a verdict with the measured processing time displayed on screen. Typical time: 3 to 5 seconds.
-- **Batch**: upload a manifest CSV plus a folder of images. Results stream in live with a progress bar, summary counts, and a triage view that defaults to showing only the labels that need attention. Measured: 15 labels in about 8 seconds end to end with bounded concurrency.
+- **Batch**: upload a manifest CSV plus a folder of images. Results stream in live with a progress bar, summary counts, a triage view that defaults to showing only the labels that need attention, and a one-click CSV export of every result for records or follow-up. Measured: 15 labels in about 8 seconds end to end with bounded concurrency.
 
 ## Quickstart (local)
 
@@ -97,7 +97,7 @@ Each requirement I heard in the stakeholder notes maps to something concrete in 
 | The full mandatory field list, not just brand and ABV | Brand, class and type, alcohol content, net contents, name and address, country of origin for imports, and the warning are all extracted and compared. |
 | The 30 to 40 second vendor pilot that nobody used; "5 seconds or nobody uses it" (Sarah) | One vision call per label, deterministic local logic, and the measured time displayed in the UI on every result. |
 | The firewall blocked the vendor's ML endpoints (Marcus) | The vision engine is behind a `VisionExtractor` interface. The production swap to an in-boundary provider is a one-class change, documented below. |
-| Janet's 200-300 label batches | Batch is a first-class flow: manifest upload, live progress, summary counts, and a filter that defaults to only the labels needing attention. |
+| Janet's 200-300 label batches | Batch is a first-class flow: manifest upload, live progress, summary counts, a filter that defaults to only the labels needing attention, and a CSV export so the triage results can be acted on outside the tool. |
 | Bad photos: angle, glare, lighting (Jenny) | Per-field confidence, an UNREADABLE verdict, and trust gates: a warning that could not be read clearly yields "request a clearer photo," not a false violation. The degraded corpus proves each case. |
 | "We value how you fill in gaps independently" | Every gap I filled is written down in the Assumptions section below. |
 
@@ -160,7 +160,7 @@ Stated honestly, because the failure modes matter as much as the features:
 
 ## Testing
 
-88 unit tests cover the normalizers, matching strategies, warning sub-checks, verdict logic (including the table wine exception, trust gates, and confidence downgrades), the API endpoints with an injected mock extractor, and corpus generation.
+95 unit tests cover the normalizers, matching strategies, warning sub-checks, verdict logic (including the table wine exception, trust gates, and confidence downgrades), the API endpoints with an injected mock extractor, and corpus generation.
 
 ```bash
 cd backend && python -m pytest -q
