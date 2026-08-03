@@ -32,6 +32,38 @@ function needsAttention(item) {
   return itemVerdict(item) !== "pass";
 }
 
+const CSV_HEADER = ["filename", "verdict", "headline", "reasons", "seconds"];
+
+function csvCell(value) {
+  const s = value == null ? "" : String(value);
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+// Full batch as CSV (every label, independent of the on-screen filter) so the
+// download is a complete auditable record, not a filtered subset.
+function resultsToCsv(items) {
+  const lines = [CSV_HEADER.map(csvCell).join(",")];
+  for (const item of items) {
+    const verdict = itemVerdict(item).toUpperCase();
+    const headline = item.error ? item.error : item.result.headline;
+    const reasons = item.error ? "" : item.result.reasons.join(" | ");
+    const seconds =
+      item.error || item.result.elapsed_seconds == null ? "" : item.result.elapsed_seconds;
+    lines.push([item.filename, verdict, headline, reasons, seconds].map(csvCell).join(","));
+  }
+  return lines.join("\n");
+}
+
+function downloadResults(items) {
+  const blob = new Blob([resultsToCsv(items)], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ttb_batch_results.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function BatchView() {
   const [manifestFile, setManifestFile] = useState(null);
   const [imageFiles, setImageFiles] = useState([]);
@@ -162,6 +194,14 @@ export default function BatchView() {
               ) : null
             )}
             {elapsed != null && <span className="chip">done in {elapsed}s</span>}
+          </p>
+        )}
+
+        {summary && items.length > 0 && (
+          <p>
+            <button type="button" className="linklike" onClick={() => downloadResults(items)}>
+              Download results (CSV)
+            </button>
           </p>
         )}
 

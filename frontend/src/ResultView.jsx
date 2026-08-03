@@ -12,6 +12,7 @@ const FIELD_LABELS = {
   net_contents: "Net contents",
   name_address: "Name and address",
   country_of_origin: "Country of origin",
+  sulfite_declaration: "Sulfite declaration",
 };
 
 const MATCH_WORDS = {
