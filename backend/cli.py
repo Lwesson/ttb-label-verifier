@@ -12,6 +12,10 @@ import mimetypes
 import time
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=True)
+
 from ttb.models import BeverageType, ExpectedValues, ExtractedLabel
 from ttb.normalize import parse_net_contents
 from ttb.verdict import FIELD_LABELS, verify
