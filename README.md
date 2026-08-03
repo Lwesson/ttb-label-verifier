@@ -142,9 +142,9 @@ Gaps in the brief that I filled, and how:
 
 ## Production path and compliance
 
-The prototype calls the Anthropic API directly. For a government boundary the swap is deliberately small:
+The prototype calls the Anthropic API directly. The TTB team is on Azure (FedRAMP-certified since the 2019 migration) and blocks outbound traffic to most domains, which is what broke the previous vendor's cloud ML endpoints. So the real question is how this runs inside their boundary, and the `VisionExtractor` interface makes that a one-adapter change:
 
-- **FedRAMP path**: the same Claude models run on AWS Bedrock in GovCloud (FedRAMP High) and on Google Cloud Vertex. Because all model access goes through the `VisionExtractor` interface, moving in-boundary is one new adapter class with the same prompts; no pipeline, UI, or rule changes. Azure OpenAI or Azure AI Document Intelligence adapters are the equivalent moves on the Azure side.
+- **In-boundary deployment, Azure first**: all model access goes through the `VisionExtractor` interface, so moving inside the TTB boundary is one new adapter class with the same prompts and no pipeline, UI, or rule changes. The direct path keeps them on Azure: an Azure OpenAI vision adapter, or Azure AI Document Intelligence for OCR and layout, so nothing leaves their existing accreditation or trips the outbound firewall. If model continuity matters more than staying single-cloud, these exact Claude models also run in-boundary on AWS Bedrock GovCloud (FedRAMP High) or Google Cloud Vertex.
 - **Data handling**: no image or result persistence, no PII stored, the API key lives in server-side environment configuration and is rotated on the provider's normal schedule.
 - **Scale**: batch throughput is governed by one concurrency knob and the provider rate limit. At the measured per-label latency, a 300-label batch completes in a few minutes at concurrency 8.
 
