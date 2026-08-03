@@ -108,6 +108,14 @@ def test_verify_is_import_country_missing_fails():
     assert r.json()["verdict"] == "fail"
 
 
+def test_verify_returns_503_when_key_missing(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(app_module, "_extractor", None)
+    r = post_verify()
+    assert r.status_code == 503
+    assert "not configured" in r.json()["detail"].lower()
+
+
 def test_frontend_served_if_built():
     import pathlib
 

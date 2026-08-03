@@ -29,6 +29,14 @@ _extractor: VisionExtractor | None = None
 def get_extractor() -> VisionExtractor:
     global _extractor
     if _extractor is None:
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "The server is not configured with a vision API key yet. "
+                    "This is a setup issue, not a problem with your label."
+                ),
+            )
         from ttb.vision.claude import ClaudeVisionExtractor
 
         _extractor = ClaudeVisionExtractor()
