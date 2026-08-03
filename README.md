@@ -146,7 +146,7 @@ The prototype calls the Anthropic API directly. The TTB team is on Azure (FedRAM
 
 - **In-boundary deployment, Azure first**: all model access goes through the `VisionExtractor` interface, so moving inside the TTB boundary is one new adapter class with the same prompts and no pipeline, UI, or rule changes. The direct path keeps them on Azure: an Azure OpenAI vision adapter, or Azure AI Document Intelligence for OCR and layout, so nothing leaves their existing accreditation or trips the outbound firewall. If model continuity matters more than staying single-cloud, these exact Claude models also run in-boundary on AWS Bedrock GovCloud (FedRAMP High) or Google Cloud Vertex.
 - **Data handling**: no image or result persistence, no PII stored, the API key lives in server-side environment configuration and is rotated on the provider's normal schedule.
-- **Scale**: batch throughput is governed by one concurrency knob and the provider rate limit. At the measured per-label latency, a 300-label batch completes in a few minutes at concurrency 8.
+- **Scale**: the service is stateless (no database, images processed in memory), so throughput scales with the concurrency knob and stateless replicas, bounded by the vision provider's rate limit rather than the app. One instance sustains on the order of 7,000 labels an hour (the measured 15-label batch runs in about 8 seconds at concurrency 8), comfortably above the roughly 75 an hour that 150,000 applications a year averages to, with room for several times that volume and a larger agent pool. A large importer batch of 200 to 300 labels clears in a few minutes.
 
 ## Limitations and trade-offs
 

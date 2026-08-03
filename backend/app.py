@@ -122,7 +122,10 @@ async def verify_label(
     )
     start = time.perf_counter()
     try:
-        extraction = extractor.extract(data, image.content_type, bt)
+        # Offload the blocking vision call so one worker can serve many
+        # concurrent single-label requests instead of serializing on the
+        # event loop (the batch path already does this).
+        extraction = await asyncio.to_thread(extractor.extract, data, image.content_type, bt)
     except ExtractionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     result = verify(expected, extraction)
