@@ -148,7 +148,7 @@ export default function BatchView() {
         {(running || items.length > 0) && total > 0 && (
           <p className="progress-text">
             Checked {items.length} of {total}
-            <progress value={items.length} max={total} />
+            <progress aria-label="Batch progress" value={items.length} max={total} />
           </p>
         )}
 
