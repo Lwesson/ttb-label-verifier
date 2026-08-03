@@ -39,7 +39,9 @@ class Thresholds:
     """Tunable knobs for matching and confidence, kept in one place."""
     fuzzy_match: float = 93.0        # >= this: same text after normalization
     fuzzy_review: float = 75.0       # >= this: near match, needs a human
-    abv_tolerance: float = 0.3       # percentage points
+    abv_tolerance: float = 0.3       # percentage points (distilled spirits, malt: 27 CFR 5.65)
+    wine_abv_tolerance_low: float = 1.5   # wine at 14% or less (27 CFR 4.36)
+    wine_abv_tolerance_high: float = 1.0  # wine above 14% (27 CFR 4.36)
     proof_tolerance: float = 0.1     # proof must equal 2 x ABV within this
     net_contents_tolerance_ml: float = 5.0  # covers fl oz conversion rounding
     conf_unreadable: float = 0.35    # below: whole image is UNREADABLE
@@ -56,11 +58,26 @@ def required_fields(beverage_type: BeverageType, is_import: bool) -> list[str]:
 
 
 def is_table_wine_exempt(designation: str | None, expected_abv: float | None) -> bool:
-    """27 CFR 4.36: wine at 7 to 14 percent ABV may omit a numeric alcohol
-    statement if designated 'table wine' or 'light wine'."""
+    """27 CFR 4.36: wine at 14 percent ABV or less may omit a numeric alcohol
+    statement if designated 'table wine' or 'light wine'. The 7 percent floor is
+    a jurisdictional line (wine under 7 percent is regulated by FDA, not TTB
+    part 4), not a limit stated in 4.36 itself."""
     if not designation:
         return False
     d = designation.casefold()
     if not any(t in d for t in TABLE_WINE_DESIGNATIONS):
         return False
     return expected_abv is None or 7.0 <= expected_abv <= 14.0
+
+
+def abv_tolerance_for(
+    th: "Thresholds", beverage_type: BeverageType, expected_abv: float | None
+) -> float:
+    """Acceptable ABV variance by commodity. Wine gets the wider 27 CFR 4.36
+    tolerances (1.5 points at or below 14 percent, 1.0 above); distilled spirits
+    and malt use the tight default (27 CFR 5.65)."""
+    if beverage_type != BeverageType.WINE:
+        return th.abv_tolerance
+    if expected_abv is not None and expected_abv > 14.0:
+        return th.wine_abv_tolerance_high
+    return th.wine_abv_tolerance_low

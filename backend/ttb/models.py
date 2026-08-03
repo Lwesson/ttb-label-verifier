@@ -51,6 +51,7 @@ class ExtractedLabel(BaseModel):
     net_contents: FieldExtraction = Field(default_factory=FieldExtraction)
     name_address: FieldExtraction = Field(default_factory=FieldExtraction)
     country_of_origin: FieldExtraction = Field(default_factory=FieldExtraction)
+    sulfite_declaration: FieldExtraction = Field(default_factory=FieldExtraction)
     warning_text: FieldExtraction = Field(default_factory=FieldExtraction)
     warning_visual: WarningVisual = Field(default_factory=WarningVisual)
     overall_readability: float = 0.0

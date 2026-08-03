@@ -2,6 +2,7 @@ from ttb.models import BeverageType
 from ttb.rules import (
     CANONICAL_WARNING,
     Thresholds,
+    abv_tolerance_for,
     is_table_wine_exempt,
     required_fields,
 )
@@ -37,3 +38,14 @@ def test_thresholds_defaults():
     th = Thresholds()
     assert th.fuzzy_match > th.fuzzy_review
     assert th.conf_unreadable < th.conf_review
+
+
+def test_abv_tolerance_by_type():
+    th = Thresholds()
+    assert abv_tolerance_for(th, BeverageType.DISTILLED_SPIRITS, 45.0) == th.abv_tolerance
+    assert abv_tolerance_for(th, BeverageType.MALT, 5.0) == th.abv_tolerance
+    assert abv_tolerance_for(th, BeverageType.WINE, 12.0) == th.wine_abv_tolerance_low
+    assert abv_tolerance_for(th, BeverageType.WINE, 14.0) == th.wine_abv_tolerance_low
+    assert abv_tolerance_for(th, BeverageType.WINE, None) == th.wine_abv_tolerance_low
+    assert abv_tolerance_for(th, BeverageType.WINE, 18.0) == th.wine_abv_tolerance_high
+    assert th.wine_abv_tolerance_low > th.abv_tolerance

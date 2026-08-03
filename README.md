@@ -106,8 +106,8 @@ Each requirement I heard in the stakeholder notes maps to something concrete in 
 All rules are grounded in the regulations and collected in [docs/ttb-regulations-reference.md](docs/ttb-regulations-reference.md):
 
 - **Warning statement** (27 CFR 16.21, 16.22): normalized word-for-word comparison against the canonical text, a strict capitalization check on the GOVERNMENT WARNING prefix, and best-effort visual checks for bold and legibility.
-- **Mandatory fields** by commodity (27 CFR parts 4, 5, 7), including the table wine ABV exception and country of origin for imports.
-- **Numeric fields**: ABV parsed from any common format, cross-checked against proof (proof = 2 x ABV), net contents normalized to mL with unit tolerance.
+- **Mandatory fields** by commodity (27 CFR parts 4, 5, 7), including the table wine ABV exception, the wine sulfite declaration (27 CFR 4.32(e), reviewed for wine since ppm cannot be read from a photo), and country of origin for imports.
+- **Numeric fields**: ABV parsed from any common format, cross-checked against proof (proof = 2 x ABV), with commodity-specific tolerances (wine 1.5 points at or below 14 percent and 1.0 above per 27 CFR 4.36, distilled spirits and malt 0.3). Net contents normalized to mL with unit tolerance.
 - Thresholds (fuzzy bands, tolerances, confidence gates) live in `backend/ttb/rules.py` where they can be audited and tuned without touching logic.
 
 ## Test corpus and results
@@ -156,6 +156,7 @@ Stated honestly, because the failure modes matter as much as the features:
 - **Physical type-size rules (minimum mm by container volume) cannot be measured from a photo** without a known physical scale. The tool checks relative legibility and says so, instead of faking a measurement.
 - **Vision LLMs can autocomplete text they know.** A model may "read" the canonical warning through blur because it knows what it should say. The trust gates (low confidence or low readability force REVIEW, never a confident verdict) and the literal-model choice contain this, and the residual risk is documented here on purpose.
 - **The corpus is synthetic.** Programmatic rendering controls every character, which is what makes the strict-text cases provable, but real-world label photography is messier than four degradation functions.
+- **Composition-dependent disclosures are out of scope.** Items that depend on the recipe or lab data rather than the printed label, an age statement for whisky or brandy under four years, FD&C Yellow No. 5, cochineal or carmine, aspartame, neutral-spirits percentage, appellation of origin, are not verified, because they cannot be confirmed from a photo plus application data alone. The one near-universal exception, the wine sulfite declaration, is checked and reviewed.
 
 ## Testing
 

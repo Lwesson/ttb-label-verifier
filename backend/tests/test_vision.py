@@ -17,6 +17,7 @@ SAMPLE = {
     "net_contents": {"value": "750 mL", "confidence": 0.98},
     "name_address": {"value": "Bottled by Ridge & Rye Distilling Co., Bardstown, KY", "confidence": 0.9},
     "country_of_origin": {"value": None, "confidence": 0.0},
+    "sulfite_declaration": {"value": "Contains Sulfites", "confidence": 0.9},
     "warning_text": {"value": "GOVERNMENT WARNING: test", "confidence": 0.9},
     "warning_visual": {
         "prefix_bold": True, "remainder_bold": False,
@@ -49,6 +50,7 @@ def test_parse_json_raises_on_garbage():
 def test_to_extracted_full_payload():
     out = _to_extracted(SAMPLE)
     assert out.brand_name.value == "RIDGE & RYE"
+    assert out.sulfite_declaration.value == "Contains Sulfites"
     assert out.warning_visual.prefix_bold is True
     assert out.overall_readability == 0.93
 

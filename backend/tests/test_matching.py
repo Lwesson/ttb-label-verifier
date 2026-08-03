@@ -58,6 +58,14 @@ def test_abv_from_proof_only():
     assert m.status == MatchStatus.MATCH
 
 
+def test_abv_tolerance_override():
+    # A 1.0 point gap fails at the tight default but passes with a wine tolerance.
+    m, _ = match_abv(13.5, "12.5% Alc./Vol.", TH)
+    assert m.status == MatchStatus.MISMATCH
+    m, _ = match_abv(13.5, "12.5% Alc./Vol.", TH, tolerance=1.5)
+    assert m.status == MatchStatus.MATCH
+
+
 def test_abv_missing():
     m, _ = match_abv(45.0, None, TH)
     assert m.status == MatchStatus.MISSING

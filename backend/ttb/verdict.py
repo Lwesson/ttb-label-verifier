@@ -12,7 +12,13 @@ from .models import (
     WarningResult,
 )
 from .normalize import collapse_ws, parse_abv
-from .rules import BeverageType, Thresholds, is_table_wine_exempt, required_fields
+from .rules import (
+    BeverageType,
+    Thresholds,
+    abv_tolerance_for,
+    is_table_wine_exempt,
+    required_fields,
+)
 from .warning import validate_warning
 
 HEADLINES = {
@@ -29,6 +35,7 @@ FIELD_LABELS = {
     "net_contents": "Net contents",
     "name_address": "Name and address",
     "country_of_origin": "Country of origin",
+    "sulfite_declaration": "Sulfite declaration",
 }
 
 _TYPE_LABELS = {
@@ -91,7 +98,10 @@ def verify(
             ),
         ))
     else:
-        abv_match, proof_note = match_abv(expected.abv_percent, extraction.alcohol_content.value, th)
+        tolerance = abv_tolerance_for(th, expected.beverage_type, expected.abv_percent)
+        abv_match, proof_note = match_abv(
+            expected.abv_percent, extraction.alcohol_content.value, th, tolerance=tolerance
+        )
         matches.append(abv_match)
 
     matches.append(match_net_contents(expected.net_contents_ml, extraction.net_contents.value, th))
@@ -103,6 +113,26 @@ def verify(
             "country_of_origin", expected.country_of_origin,
             extraction.country_of_origin.value, th,
         ))
+
+    # Wine must declare sulfites unless it holds under 10 ppm sulfur dioxide
+    # (27 CFR 4.32(e)). We cannot measure ppm from a photo, so a missing
+    # declaration is a REVIEW (confirm with lab data), never a hard fail.
+    if expected.beverage_type == BeverageType.WINE:
+        sulfite = extraction.sulfite_declaration.value
+        if sulfite and collapse_ws(sulfite):
+            matches.append(FieldMatch(
+                field="sulfite_declaration", expected=None, extracted=sulfite,
+                status=MatchStatus.MATCH, reason=f"Sulfite declaration present ('{sulfite}')",
+            ))
+        else:
+            matches.append(FieldMatch(
+                field="sulfite_declaration", expected=None, extracted=None,
+                status=MatchStatus.REVIEW,
+                reason=(
+                    "No sulfite declaration found. Wine must state 'Contains Sulfites' "
+                    "unless it holds under 10 ppm sulfur dioxide. Please confirm."
+                ),
+            ))
 
     # Type-aware presence: required-on-label fields with no application value
     # still must appear (NOT_APPLICABLE becomes MISSING when absent).

@@ -17,7 +17,7 @@ DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
 _FIELDS = (
     "brand_name", "class_type", "alcohol_content", "net_contents",
-    "name_address", "country_of_origin", "warning_text",
+    "name_address", "country_of_origin", "sulfite_declaration", "warning_text",
 )
 
 PROMPT = """You are extracting fields from a photo of an alcoholic beverage label \
@@ -31,6 +31,7 @@ Return ONLY a JSON object, no other text, in exactly this shape:
   "net_contents": {{"value": string or null, "confidence": number}},
   "name_address": {{"value": string or null, "confidence": number}},
   "country_of_origin": {{"value": string or null, "confidence": number}},
+  "sulfite_declaration": {{"value": string or null, "confidence": number}},
   "warning_text": {{"value": string or null, "confidence": number}},
   "warning_visual": {{
     "prefix_bold": true or false or null,
@@ -55,6 +56,8 @@ title-case, or tidy the text; a compliance check depends on the literal casing.
 origin statement (for example "Product of Scotland" or "Imported from France"). \
 Do NOT infer it from the brand, the producer address, or the product style; words \
 like "Scotch", "Cognac", or "Tequila" are NOT a country-of-origin statement.
+- "sulfite_declaration" is the exact sulfite statement if the label prints one \
+(for example "Contains Sulfites" or "Contains a Sulfiting Agent"); null if absent.
 - Each "confidence" is how clearly you can read that field in THIS image.
 - "overall_readability": 1.0 means crisp and fully readable; below 0.4 means \
 too blurry, glared, or angled to trust.

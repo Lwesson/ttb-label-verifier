@@ -71,23 +71,61 @@ def test_proof_inconsistency_is_review():
     assert r.verdict == Verdict.REVIEW
 
 
-def test_table_wine_without_abv_passes():
-    expected = ExpectedValues(
+def wine_expected(**overrides):
+    base = dict(
         beverage_type=BeverageType.WINE,
         brand_name="MEADOWLARK CELLARS",
         class_type="Red Table Wine",
         abv_percent=12.0,
         net_contents_ml=750.0,
     )
-    extraction = make_extraction(
+    base.update(overrides)
+    return ExpectedValues(**base)
+
+
+def wine_extraction(**overrides):
+    base = dict(
         brand_name=f("MEADOWLARK CELLARS"),
         class_type=f("Red Table Wine"),
         alcohol_content=f(None),
         name_address=f("Produced and bottled by Meadowlark Cellars, Walla Walla, WA"),
+        sulfite_declaration=f("Contains Sulfites"),
     )
-    r = verify(expected, extraction)
+    base.update(overrides)
+    return make_extraction(**base)
+
+
+def test_table_wine_without_abv_passes():
+    r = verify(wine_expected(), wine_extraction())
     assert r.verdict == Verdict.PASS
     assert any("table wine" in m.reason.lower() for m in r.field_matches)
+
+
+def test_wine_missing_sulfite_declaration_is_review():
+    r = verify(wine_expected(), wine_extraction(sulfite_declaration=f(None)))
+    assert r.verdict == Verdict.REVIEW
+    assert any("sulfite" in reason.lower() for reason in r.reasons)
+
+
+def test_wine_with_sulfite_declaration_passes():
+    r = verify(wine_expected(), wine_extraction(sulfite_declaration=f("Contains a Sulfiting Agent")))
+    assert r.verdict == Verdict.PASS
+
+
+def test_spirits_never_checked_for_sulfites():
+    r = verify(spirits_expected(), make_extraction(sulfite_declaration=f(None)))
+    assert r.verdict == Verdict.PASS
+
+
+def test_wine_abv_within_wine_tolerance_passes():
+    expected = wine_expected(class_type="Chardonnay", abv_percent=13.5)
+    extraction = wine_extraction(class_type=f("Chardonnay"), alcohol_content=f("12.5% Alc./Vol."))
+    assert verify(expected, extraction).verdict == Verdict.PASS
+
+
+def test_spirits_same_abv_gap_still_fails():
+    r = verify(spirits_expected(), make_extraction(alcohol_content=f("44% Alc./Vol. (88 Proof)")))
+    assert r.verdict == Verdict.FAIL
 
 
 def test_wine_missing_abv_without_designation_fails():

@@ -80,11 +80,23 @@ incomplete. Requirements vary by commodity (27 CFR parts 4, 5, 7).
 - Government health warning
 - Alcohol content (disclosure rules vary; treat as expected unless known-exempt)
 
-### 2.4 The ABV exceptions (do NOT hard-fail these)
-- **Table wine:** wine 7% to 14% ABV may omit a numeric alcohol statement if the brand label
-  carries the designation "table wine" or "light wine." Over 14% ABV, numeric ABV is mandatory.
+### 2.4 The ABV exceptions and tolerances (do NOT hard-fail these)
+- **Table wine (27 CFR 4.36):** wine at **14% ABV or less** may omit a numeric alcohol statement if
+  the brand label carries the designation "table wine" or "light wine." Over 14% ABV, numeric ABV is
+  mandatory. The tool applies a 7% floor because wine under 7% ABV is regulated by FDA, not TTB part 4;
+  that floor is jurisdictional, not stated in 4.36.
+- **ABV tolerances are commodity-specific (27 CFR 4.36, 5.65):** wine permits 1.5 percentage points at
+  or below 14% and 1.0 above; distilled spirits and malt are tight (0.3). The matching engine uses a
+  per-type tolerance so a wine within its legal band is not flagged as a mismatch.
 - Beverage-type awareness matters: a missing ABV on a designated table wine is compliant, not
   a violation. A tool that flags it fails the judgment test.
+
+### 2.5 Wine sulfite declaration (27 CFR 4.32(e))
+- Wine containing 10 or more parts per million of sulfur dioxide must declare it ("Contains Sulfites"
+  or "Contains a Sulfiting Agent"). Nearly all wine qualifies, so TTB's mandatory-label checklist lists
+  it without a conditional qualifier.
+- ppm cannot be measured from a photo, so a missing declaration is treated as REVIEW (confirm with lab
+  data), never a hard fail. Checked for wine only.
 
 ## 3. Format-parsing notes (from the sample label)
 - Alcohol content appears as `45% Alc./Vol. (90 Proof)`. Parse the percentage and, if present,

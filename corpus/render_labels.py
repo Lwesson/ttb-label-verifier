@@ -51,6 +51,7 @@ def render_label(
     net_contents=None,
     name_address=NAME_ADDRESS,
     country=None,
+    sulfite=None,
     warning=CANONICAL_WARNING,
     warning_bold_prefix=True,
 ):
@@ -75,7 +76,7 @@ def render_label(
 
     y = H - 440
     small_font = ImageFont.truetype(REGULAR, 30)
-    for text in (name_address, country):
+    for text in (name_address, country, sulfite):
         if not text:
             continue
         d.text(((W - d.textlength(text, font=small_font)) / 2, y), text,
@@ -237,6 +238,7 @@ LABELS = [
             abv_line=None,
             net_contents="750 mL",
             name_address="Produced and bottled by Meadowlark Cellars, Walla Walla, WA",
+            sulfite="Contains Sulfites",
         ),
         "manifest": dict(
             beverage_type="wine", expected_brand="MEADOWLARK CELLARS",

@@ -55,9 +55,13 @@ def match_text_field(
 
 
 def match_abv(
-    expected_abv: float | None, extracted_text: str | None, th: Thresholds
+    expected_abv: float | None,
+    extracted_text: str | None,
+    th: Thresholds,
+    tolerance: float | None = None,
 ) -> tuple[FieldMatch, str | None]:
     field = "alcohol_content"
+    tol = th.abv_tolerance if tolerance is None else tolerance
     abv, proof = parse_abv(extracted_text)
     note = None
     if abv is not None and proof is not None and abs(proof - 2 * abv) > th.proof_tolerance:
@@ -82,7 +86,7 @@ def match_abv(
     if abv is None:
         abv = proof / 2
         derived = f" (derived from {proof:g} Proof)"
-    if abs(abv - expected_abv) <= th.abv_tolerance:
+    if abs(abv - expected_abv) <= tol:
         return (
             FieldMatch(field=field, expected=expected_str, extracted=extracted_text,
                        status=MatchStatus.MATCH,
