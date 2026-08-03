@@ -1,0 +1,5 @@
+anthropic>=0.40
+pydantic>=2.7
+rapidfuzz>=3.9
+pillow>=10.3
+pytest>=8.2

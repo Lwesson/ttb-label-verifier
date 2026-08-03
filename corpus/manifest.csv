@@ -1,0 +1,11 @@
+filename,beverage_type,expected_brand,expected_class_type,expected_abv,expected_net_ml,is_import,expected_country,expected_verdict,tests_what
+clean_bourbon.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,pass,"Happy path, everything matches"
+stones_throw.png,distilled_spirits,Stone's Throw,Straight Rye Whiskey,46,750,false,,review,"Fuzzy brand judgment: caps difference is REVIEW, not FAIL"
+warning_title_case.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail,Warning capitalization: title case must fail
+warning_reworded.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail,Warning wording: reworded statement must fail
+warning_missing.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail,Missing warning statement entirely
+abv_mismatch.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail,Label ABV 40 vs application 45
+net_contents_700.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,fail,Net contents 700 mL vs application 750 mL
+table_wine.png,wine,MEADOWLARK CELLARS,Red Table Wine,12,750,false,,pass,Table wine ABV exception: no numeric ABV is compliant
+proof_inconsistent.png,distilled_spirits,RIDGE & RYE,Kentucky Straight Bourbon Whiskey,45,750,false,,review,"Proof does not equal 2 x ABV, internal consistency check"
+import_no_country.png,distilled_spirits,GLEN MORRIG,Single Malt Scotch Whisky,43,750,true,Scotland,fail,Imported spirit missing country of origin
