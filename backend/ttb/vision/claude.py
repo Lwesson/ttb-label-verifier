@@ -45,9 +45,16 @@ Return ONLY a JSON object, no other text, in exactly this shape:
 Rules:
 - "alcohol_content" and "net_contents" are the verbatim label text, \
 for example "45% Alc./Vol. (90 Proof)" and "750 mL".
-- Transcribe "warning_text" EXACTLY as printed, preserving capitalization and \
-punctuation. Never correct or normalize it.
+- Transcribe every text value ("brand_name", "class_type", "name_address", \
+"warning_text", and the rest) EXACTLY as printed, preserving the original \
+capitalization and punctuation. If the label prints "STONE'S THROW" in capital \
+letters, return "STONE'S THROW", not "Stone's Throw". Never normalize, correct, \
+title-case, or tidy the text; a compliance check depends on the literal casing.
 - Use null for anything not present on the label. Never guess.
+- For "country_of_origin", report a country ONLY if the label prints an explicit \
+origin statement (for example "Product of Scotland" or "Imported from France"). \
+Do NOT infer it from the brand, the producer address, or the product style; words \
+like "Scotch", "Cognac", or "Tequila" are NOT a country-of-origin statement.
 - Each "confidence" is how clearly you can read that field in THIS image.
 - "overall_readability": 1.0 means crisp and fully readable; below 0.4 means \
 too blurry, glared, or angled to trust.

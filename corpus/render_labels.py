@@ -82,6 +82,9 @@ def render_label(
         y += 44
 
     if warning:
+        # Warning sits in a white panel with a border so it reads as legible
+        # on a contrasting background, separate and apart (27 CFR 16.22).
+        d.rectangle([55, H - 345, W - 55, H - 55], fill="#ffffff", outline="#333333", width=3)
         wfont = ImageFont.truetype(REGULAR, 26)
         wbold = ImageFont.truetype(BOLD, 26)
         head, sep, rest = warning.partition(":")
