@@ -35,6 +35,31 @@ body {
   }
 }
 
+/* Desktop single-label view: fill the viewport so both columns stay fully
+   visible, and let a tall result scroll inside its own column instead of
+   scrolling the whole page. Batch and mobile keep natural page scrolling. */
+@media screen and (min-width: 861px) {
+  .single-view {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 20px;
+  }
+
+  .single-view .single-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .single-view .pane {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+  }
+}
+
 /* Left column: one clean card, so it reads as a single panel, not a stack
    of boxes. The fieldset inside loses its own border to avoid a card in a card. */
 .form-card {

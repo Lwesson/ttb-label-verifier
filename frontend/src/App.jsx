@@ -160,7 +160,7 @@ export default function App() {
   }
 
   return (
-    <main className="page">
+    <main className={mode === "single" ? "page single-view" : "page"}>
       <h1>TTB Label Verifier</h1>
 
       <div className="tabs" role="tablist" aria-label="Verification mode">

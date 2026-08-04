@@ -4,6 +4,8 @@ An AI-assisted tool that verifies alcohol beverage labels against their applicat
 
 **Live demo:** https://ttb-label-verifier-production-2026.up.railway.app (kept warm, the first click loads instantly)
 
+![The One label screen: a sample bourbon verified as PASS, with the field-by-field comparison against the application values and the government warning checks](docs/screenshots/single-pass.png)
+
 ## What it does
 
 Every label gets one of four verdicts, always shown as an icon, a word, and a color together:
