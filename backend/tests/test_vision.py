@@ -100,17 +100,41 @@ def test_claude_extractor_calls_api_and_parses(monkeypatch):
 
 
 def test_build_content_image_block_for_png():
-    content = _build_content(b"imgbytes", "image/png", BeverageType.DISTILLED_SPIRITS)
+    content = _build_content([(b"imgbytes", "image/png")], BeverageType.DISTILLED_SPIRITS)
     assert content[0]["type"] == "image"
     assert content[0]["source"]["media_type"] == "image/png"
-    assert "distilled_spirits" in content[1]["text"]
+    assert "distilled_spirits" in content[-1]["text"]
 
 
 def test_build_content_document_block_for_pdf():
-    content = _build_content(b"%PDF-1.4 bytes", "application/pdf", BeverageType.WINE)
+    content = _build_content([(b"%PDF-1.4 bytes", "application/pdf")], BeverageType.WINE)
     assert content[0]["type"] == "document"
     assert content[0]["source"]["media_type"] == "application/pdf"
-    assert "wine" in content[1]["text"]
+    assert "wine" in content[-1]["text"]
+
+
+def test_build_content_multiple_images():
+    content = _build_content(
+        [(b"front", "image/jpeg"), (b"back", "image/png")], BeverageType.WINE
+    )
+    assert [b["type"] for b in content] == ["image", "image", "text"]
+    assert content[0]["source"]["media_type"] == "image/jpeg"
+    assert content[1]["source"]["media_type"] == "image/png"
+
+
+def test_extract_many_default_uses_first_image(monkeypatch):
+    from types import SimpleNamespace
+
+    extractor = ClaudeVisionExtractor(api_key="test-key")
+    monkeypatch.setattr(
+        extractor.client.messages,
+        "create",
+        lambda **kw: SimpleNamespace(content=[SimpleNamespace(type="text", text=json.dumps(SAMPLE))]),
+    )
+    out = extractor.extract_many(
+        [(b"front", "image/png"), (b"back", "image/jpeg")], BeverageType.WINE
+    )
+    assert out.brand_name.value == "RIDGE & RYE"
 
 
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no API key")

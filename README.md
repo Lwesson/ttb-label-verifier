@@ -15,7 +15,7 @@ Every label gets one of four verdicts, always shown as an icon, a word, and a co
 
 Two modes:
 
-- **One label**: drop in a photo, enter the application values, get a verdict with the measured processing time displayed on screen. Typical time: 3 to 5 seconds.
+- **One label**: add one or more photos of the same label (front, back, a close-up of the small print), enter the application values, get a verdict with the measured processing time on screen. Extra angles let the reader pull each field from whichever image shows it clearest, which is how small print and multi-panel labels get covered. Typical time: 3 to 5 seconds.
 - **Batch**: upload a manifest CSV plus a folder of images. Results stream in live with a progress bar, summary counts, a triage view that defaults to showing only the labels that need attention, and a one-click CSV export of every result for records or follow-up. Measured: 15 labels in about 8 seconds end to end with bounded concurrency.
 
 ## Quickstart (local)
@@ -98,7 +98,7 @@ Each requirement I heard in the stakeholder notes maps to something concrete in 
 | The 30 to 40 second vendor pilot that nobody used; "5 seconds or nobody uses it" (Sarah) | One vision call per label, deterministic local logic, and the measured time displayed in the UI on every result. |
 | The firewall blocked the vendor's ML endpoints (Marcus) | The vision engine is behind a `VisionExtractor` interface. The production swap to an in-boundary provider is a one-class change, documented below. |
 | Janet's 200-300 label batches | Batch is a first-class flow: manifest upload, live progress, summary counts, a filter that defaults to only the labels needing attention, and a CSV export so the triage results can be acted on outside the tool. |
-| Bad photos: angle, glare, lighting (Jenny) | Per-field confidence, an UNREADABLE verdict, and trust gates: a warning that could not be read clearly yields "request a clearer photo," not a false violation. The degraded corpus proves each case. |
+| Bad photos: angle, glare, lighting (Jenny) | Per-field confidence, an UNREADABLE verdict, and trust gates: a warning that could not be read clearly yields "request a clearer photo," not a false violation. The degraded corpus proves each case, and several photos of one label can be submitted together so a clearer angle or close-up covers a field lost to glare or small print. |
 | "We value how you fill in gaps independently" | Every gap I filled is written down in the Assumptions section below. |
 
 ## Validation rules
@@ -135,7 +135,7 @@ Gaps in the brief that I filled, and how:
 
 1. **Application data is agent-provided.** COLA integration is out of scope, so "what the application says" comes from the form (single mode) or a manifest CSV (batch mode). In production these values would come from the system of record.
 2. **No image persistence.** Labels are processed in memory and never written to disk or stored; each request is ephemeral. This is a deliberate compliance posture, not an accident.
-3. **One label per file**, English text. Accepts PNG, JPEG, WebP, HEIC/HEIF, and PDF up to 10 MB; HEIC is converted to JPEG server-side and PDF pages are read directly.
+3. **One label, one or more images**, English text. Accepts PNG, JPEG, WebP, HEIC/HEIF, and PDF up to 10 MB each; HEIC is converted to JPEG server-side and PDF pages are read directly. Up to 5 photos of the *same* label (front, back, close-ups) can be submitted together and are combined into one result, reading each field from the clearest image, which is how mandatory info split across panels (warning on the back, net contents on the front) gets fully covered.
 4. **Imports are flagged by the agent** (`is_import`), which switches on the country-of-origin requirement.
 5. **Bold and legibility are best-effort visual assessments** by the vision model and are always labeled as such in results.
 6. **Confidence thresholds** (when a read is trusted, when a label is unreadable) are judgment calls, kept tunable in `rules.py`, with the reasoning commented.
@@ -171,7 +171,7 @@ cd backend && python -m pytest -q
 ## API
 
 - `GET /api/health` -> `{"status": "ok"}`
-- `POST /api/verify` (multipart): `image` file (PNG, JPEG, WebP, HEIC, or PDF) + form fields `beverage_type` (distilled_spirits | wine | malt), `brand_name` (required), `class_type`, `abv_percent`, `net_contents`, `name_address`, `country_of_origin`, `is_import`. Returns the full verdict JSON with per-field results, warning sub-checks, and elapsed seconds.
+- `POST /api/verify` (multipart): one or more `images` files (PNG, JPEG, WebP, HEIC, or PDF; up to 5 photos of the same label, combined into one result) + form fields `beverage_type` (distilled_spirits | wine | malt), `brand_name` (required), `class_type`, `abv_percent`, `net_contents`, `name_address`, `country_of_origin`, `is_import`. Returns the full verdict JSON with per-field results, warning sub-checks, and elapsed seconds.
 - `POST /api/verify-batch` (multipart): `manifest` CSV (columns: `filename, beverage_type, brand_name, class_type, abv_percent, net_contents, name_address, country_of_origin, is_import`) plus repeated `images` files. Streams NDJSON: a `start` line, one `result` line per label as it completes, and a `done` line with summary counts. Row-level problems come back as per-row errors and never abort the batch. Capped at 400 rows per request.
 
 ## License

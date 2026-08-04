@@ -29,7 +29,7 @@ def use_extractor(extractor):
     app_module.app.dependency_overrides[app_module.get_extractor] = lambda: extractor
 
 
-def post_verify(**form_overrides):
+def post_verify(images=None, **form_overrides):
     form = {
         "beverage_type": "distilled_spirits",
         "brand_name": "RIDGE & RYE",
@@ -38,7 +38,9 @@ def post_verify(**form_overrides):
         "net_contents": "750 mL",
     }
     form.update(form_overrides)
-    files = {"image": ("label.png", io.BytesIO(b"fake image bytes"), "image/png")}
+    if images is None:
+        images = [("label.png", b"fake image bytes", "image/png")]
+    files = [("images", (name, io.BytesIO(data), ct)) for name, data, ct in images]
     return client.post("/api/verify", data=form, files=files)
 
 
@@ -62,25 +64,32 @@ def test_verify_happy_path_pass():
 
 def test_verify_rejects_wrong_file_type():
     use_extractor(MockExtractor(make_extraction()))
-    files = {"image": ("notes.txt", io.BytesIO(b"hello"), "text/plain")}
-    r = client.post(
-        "/api/verify",
-        data={"beverage_type": "distilled_spirits", "brand_name": "X"},
-        files=files,
-    )
+    r = post_verify(images=[("notes.txt", b"hello", "text/plain")])
     assert r.status_code == 400
     assert "PNG" in r.json()["detail"]
 
 
 def test_verify_rejects_empty_image():
     use_extractor(MockExtractor(make_extraction()))
-    files = {"image": ("label.png", io.BytesIO(b""), "image/png")}
-    r = client.post(
-        "/api/verify",
-        data={"beverage_type": "distilled_spirits", "brand_name": "X"},
-        files=files,
-    )
+    r = post_verify(images=[("label.png", b"", "image/png")])
     assert r.status_code == 400
+
+
+def test_verify_accepts_multiple_images():
+    use_extractor(MockExtractor(make_extraction()))
+    r = post_verify(images=[
+        ("front.png", b"front bytes", "image/png"),
+        ("back.png", b"back bytes", "image/png"),
+    ])
+    assert r.status_code == 200
+    assert r.json()["verdict"] == "pass"
+
+
+def test_verify_rejects_too_many_images():
+    use_extractor(MockExtractor(make_extraction()))
+    r = post_verify(images=[(f"p{i}.png", b"x", "image/png") for i in range(6)])
+    assert r.status_code == 400
+    assert "at most" in r.json()["detail"].lower()
 
 
 def test_verify_rejects_unknown_beverage_type():

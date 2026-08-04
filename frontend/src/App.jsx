@@ -24,6 +24,7 @@ const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const ACCEPT_ATTR =
   "image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,.heic,.heif";
 const ACCEPTED_EXT = [".png", ".jpg", ".jpeg", ".webp", ".heic", ".heif", ".pdf"];
+const MAX_IMAGES = 5;
 
 function isAccepted(f) {
   // HEIC often arrives with an empty or wrong MIME type, so fall back to the
@@ -38,11 +39,12 @@ function isPreviewable(f) {
   return IMAGE_TYPES.includes(f.type);
 }
 
+let _uid = 0;
+
 export default function App() {
   const [mode, setMode] = useState("single");
   const [form, setForm] = useState(EMPTY_FORM);
-  const [file, setFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [items, setItems] = useState([]); // { id, file, url }
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -53,25 +55,45 @@ export default function App() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function takeFile(f) {
-    if (!f) return;
-    if (!isAccepted(f)) {
-      setError("Please choose a PNG, JPEG, WebP, HEIC, or PDF file of the label.");
-      return;
-    }
+  function takeFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
     setError(null);
     setResult(null);
-    setFile(f);
-    setPreviewUrl((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return isPreviewable(f) ? URL.createObjectURL(f) : null;
+    setItems((prev) => {
+      const next = [...prev];
+      for (const f of files) {
+        if (next.length >= MAX_IMAGES) {
+          setError(`You can add up to ${MAX_IMAGES} photos of one label.`);
+          break;
+        }
+        if (!isAccepted(f)) {
+          setError("Please choose PNG, JPEG, WebP, HEIC, or PDF files of the label.");
+          continue;
+        }
+        next.push({
+          id: ++_uid,
+          file: f,
+          url: isPreviewable(f) ? URL.createObjectURL(f) : null,
+        });
+      }
+      return next;
     });
+  }
+
+  function removeItem(id) {
+    setItems((prev) => {
+      const found = prev.find((it) => it.id === id);
+      if (found && found.url) URL.revokeObjectURL(found.url);
+      return prev.filter((it) => it.id !== id);
+    });
+    setResult(null);
   }
 
   async function onSubmit(e) {
     e.preventDefault();
-    if (!file) {
-      setError("Please add a photo of the label first.");
+    if (items.length === 0) {
+      setError("Please add at least one photo of the label first.");
       return;
     }
     if (!form.brand_name.trim()) {
@@ -82,10 +104,10 @@ export default function App() {
     setError(null);
     setResult(null);
     try {
-      const res = await verifyLabel(file, {
-        ...form,
-        is_import: form.is_import ? "true" : "false",
-      });
+      const res = await verifyLabel(
+        items.map((it) => it.file),
+        { ...form, is_import: form.is_import ? "true" : "false" },
+      );
       setResult(res);
     } catch (err) {
       setError(err.message);
@@ -122,168 +144,194 @@ export default function App() {
       {mode === "batch" ? (
         <BatchView />
       ) : (
-        <>
-      <p className="lede">
-        Add a photo of the label, enter what the application says, then press
-        Verify label.
-      </p>
+        <div className="single-grid">
+          <div className="pane">
+            <p className="lede">
+              Add one or more photos of the label (front, back, a close-up of the
+              small print), enter what the application says, then press Verify label.
+            </p>
 
-      <form onSubmit={onSubmit} noValidate>
-        <div
-          className={dragOver ? "dropzone dragover" : "dropzone"}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            takeFile(e.dataTransfer.files[0]);
-          }}
-          onClick={() => inputRef.current.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              inputRef.current.click();
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-label="Add a photo of the label"
-        >
-          {file && previewUrl ? (
-            <img src={previewUrl} alt="The label photo you added" className="preview" />
-          ) : file ? (
-            <p className="file-chosen">
-              <strong>{file.name}</strong>
-              <br />
-              ready to verify (no preview available for this file type)
-            </p>
-          ) : (
-            <p>
-              <strong>Click here to add the label (photo or PDF)</strong>
-              <br />
-              or drag and drop it into this box
-            </p>
-          )}
-          <input
-            ref={inputRef}
-            type="file"
-            accept={ACCEPT_ATTR}
-            hidden
-            onChange={(e) => takeFile(e.target.files[0])}
-          />
+            <form onSubmit={onSubmit} noValidate>
+              <div
+                className={dragOver ? "dropzone dragover" : "dropzone"}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  takeFiles(e.dataTransfer.files);
+                }}
+                onClick={() => inputRef.current.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    inputRef.current.click();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Add photos of the label"
+              >
+                <p>
+                  <strong>Click here to add label photos</strong>
+                  <br />
+                  or drag and drop them here (front, back, close-ups)
+                </p>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept={ACCEPT_ATTR}
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    takeFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              {items.length > 0 && (
+                <ul className="thumbs">
+                  {items.map((it) => (
+                    <li key={it.id} className="thumb">
+                      {it.url ? (
+                        <img src={it.url} alt={`Label photo: ${it.file.name}`} />
+                      ) : (
+                        <span className="thumb-file">{it.file.name}</span>
+                      )}
+                      <button
+                        type="button"
+                        className="thumb-remove"
+                        aria-label={`Remove ${it.file.name}`}
+                        onClick={() => removeItem(it.id)}
+                      >
+                        &times;
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <fieldset>
+                <legend>What does the application say?</legend>
+
+                <label htmlFor="beverage_type">Beverage type</label>
+                <select
+                  id="beverage_type"
+                  value={form.beverage_type}
+                  onChange={(e) => update("beverage_type", e.target.value)}
+                >
+                  {BEVERAGE_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+
+                <label htmlFor="brand_name">Brand name (required)</label>
+                <input
+                  id="brand_name"
+                  type="text"
+                  value={form.brand_name}
+                  onChange={(e) => update("brand_name", e.target.value)}
+                  placeholder="Example: Stone's Throw"
+                />
+
+                <label htmlFor="class_type">Class and type</label>
+                <input
+                  id="class_type"
+                  type="text"
+                  value={form.class_type}
+                  onChange={(e) => update("class_type", e.target.value)}
+                  placeholder="Example: Kentucky Straight Bourbon Whiskey"
+                />
+
+                <div className="row">
+                  <div>
+                    <label htmlFor="abv_percent">Alcohol content (% ABV)</label>
+                    <input
+                      id="abv_percent"
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      min="0"
+                      max="99"
+                      value={form.abv_percent}
+                      onChange={(e) => update("abv_percent", e.target.value)}
+                      placeholder="Example: 45"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="net_contents">Net contents</label>
+                    <input
+                      id="net_contents"
+                      type="text"
+                      value={form.net_contents}
+                      onChange={(e) => update("net_contents", e.target.value)}
+                      placeholder="Example: 750 mL"
+                    />
+                  </div>
+                </div>
+
+                <label htmlFor="name_address">Bottler name and address (optional)</label>
+                <input
+                  id="name_address"
+                  type="text"
+                  value={form.name_address}
+                  onChange={(e) => update("name_address", e.target.value)}
+                  placeholder="Example: Bottled by Ridge & Rye Distilling Co., Bardstown, KY"
+                />
+
+                <div className="import-row">
+                  <input
+                    id="is_import"
+                    type="checkbox"
+                    checked={form.is_import}
+                    onChange={(e) => update("is_import", e.target.checked)}
+                  />
+                  <label htmlFor="is_import">This product is imported</label>
+                </div>
+
+                {form.is_import && (
+                  <>
+                    <label htmlFor="country_of_origin">Country of origin</label>
+                    <input
+                      id="country_of_origin"
+                      type="text"
+                      value={form.country_of_origin}
+                      onChange={(e) => update("country_of_origin", e.target.value)}
+                      placeholder="Example: Scotland"
+                    />
+                  </>
+                )}
+              </fieldset>
+
+              <button type="submit" className="primary" disabled={loading}>
+                {loading ? "Checking the label..." : "Verify label"}
+              </button>
+            </form>
+          </div>
+
+          <div className="pane result-pane" aria-live="polite">
+            {error && (
+              <div className="error" role="alert">
+                <strong>We hit a problem:</strong> {error}
+              </div>
+            )}
+            {result ? (
+              <ResultView result={result} />
+            ) : (
+              !error && (
+                <p className="result-placeholder">
+                  Your result will appear here after you press Verify label.
+                </p>
+              )
+            )}
+          </div>
         </div>
-
-        <fieldset>
-          <legend>What does the application say?</legend>
-
-          <label htmlFor="beverage_type">Beverage type</label>
-          <select
-            id="beverage_type"
-            value={form.beverage_type}
-            onChange={(e) => update("beverage_type", e.target.value)}
-          >
-            {BEVERAGE_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-
-          <label htmlFor="brand_name">Brand name (required)</label>
-          <input
-            id="brand_name"
-            type="text"
-            value={form.brand_name}
-            onChange={(e) => update("brand_name", e.target.value)}
-            placeholder="Example: Stone's Throw"
-          />
-
-          <label htmlFor="class_type">Class and type</label>
-          <input
-            id="class_type"
-            type="text"
-            value={form.class_type}
-            onChange={(e) => update("class_type", e.target.value)}
-            placeholder="Example: Kentucky Straight Bourbon Whiskey"
-          />
-
-          <div className="row">
-            <div>
-              <label htmlFor="abv_percent">Alcohol content (% ABV)</label>
-              <input
-                id="abv_percent"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min="0"
-                max="99"
-                value={form.abv_percent}
-                onChange={(e) => update("abv_percent", e.target.value)}
-                placeholder="Example: 45"
-              />
-            </div>
-            <div>
-              <label htmlFor="net_contents">Net contents</label>
-              <input
-                id="net_contents"
-                type="text"
-                value={form.net_contents}
-                onChange={(e) => update("net_contents", e.target.value)}
-                placeholder="Example: 750 mL"
-              />
-            </div>
-          </div>
-
-          <label htmlFor="name_address">Bottler name and address (optional)</label>
-          <input
-            id="name_address"
-            type="text"
-            value={form.name_address}
-            onChange={(e) => update("name_address", e.target.value)}
-            placeholder="Example: Bottled by Ridge & Rye Distilling Co., Bardstown, KY"
-          />
-
-          <div className="import-row">
-            <input
-              id="is_import"
-              type="checkbox"
-              checked={form.is_import}
-              onChange={(e) => update("is_import", e.target.checked)}
-            />
-            <label htmlFor="is_import">This product is imported</label>
-          </div>
-
-          {form.is_import && (
-            <>
-              <label htmlFor="country_of_origin">Country of origin</label>
-              <input
-                id="country_of_origin"
-                type="text"
-                value={form.country_of_origin}
-                onChange={(e) => update("country_of_origin", e.target.value)}
-                placeholder="Example: Scotland"
-              />
-            </>
-          )}
-        </fieldset>
-
-        <button type="submit" className="primary" disabled={loading}>
-          {loading ? "Checking the label..." : "Verify label"}
-        </button>
-      </form>
-
-      <div aria-live="polite">
-        {error && (
-          <div className="error" role="alert">
-            <strong>We hit a problem:</strong> {error}
-          </div>
-        )}
-        {result && <ResultView result={result} />}
-      </div>
-        </>
       )}
     </main>
   );

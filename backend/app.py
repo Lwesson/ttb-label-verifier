@@ -28,6 +28,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=True)
 app = FastAPI(title="TTB Label Verifier")
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_IMAGES_PER_ITEM = 5
 MAX_BATCH_ROWS = 400
 _TRUTHY = {"true", "1", "yes", "y"}
 
@@ -71,7 +72,7 @@ def health():
 
 @app.post("/api/verify")
 async def verify_label(
-    image: UploadFile = File(...),
+    images: list[UploadFile] = File(...),
     beverage_type: str = Form(...),
     brand_name: str = Form(...),
     class_type: str | None = Form(None),
@@ -82,21 +83,33 @@ async def verify_label(
     is_import: bool = Form(False),
     extractor: VisionExtractor = Depends(get_extractor),
 ):
-    data = await image.read()
-    if not data:
+    if not images:
+        raise HTTPException(
+            status_code=422,
+            detail="Please add at least one photo of the label.",
+        )
+    if len(images) > MAX_IMAGES_PER_ITEM:
         raise HTTPException(
             status_code=400,
-            detail="The uploaded file is empty. Please try adding it again.",
+            detail=f"Please upload at most {MAX_IMAGES_PER_ITEM} images of one label.",
         )
-    if len(data) > MAX_IMAGE_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail="That file is larger than 10 MB. Please upload a smaller one.",
-        )
-    try:
-        prepared, media_type = prepare_upload(data, image.content_type, image.filename)
-    except UnsupportedUpload as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    prepared: list[tuple[bytes, str]] = []
+    for image in images:
+        data = await image.read()
+        if not data:
+            raise HTTPException(
+                status_code=400,
+                detail="One of the uploaded files is empty. Please try adding it again.",
+            )
+        if len(data) > MAX_IMAGE_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail="One of the files is larger than 10 MB. Please upload a smaller one.",
+            )
+        try:
+            prepared.append(prepare_upload(data, image.content_type, image.filename))
+        except UnsupportedUpload as e:
+            raise HTTPException(status_code=400, detail=str(e))
     try:
         bt = BeverageType(beverage_type)
     except ValueError:
@@ -124,7 +137,7 @@ async def verify_label(
         # Offload the blocking vision call so one worker can serve many
         # concurrent single-label requests instead of serializing on the
         # event loop (the batch path already does this).
-        extraction = await asyncio.to_thread(extractor.extract, prepared, media_type, bt)
+        extraction = await asyncio.to_thread(extractor.extract_many, prepared, bt)
     except ExtractionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     result = verify(expected, extraction)

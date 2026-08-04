@@ -20,8 +20,11 @@ _FIELDS = (
     "name_address", "country_of_origin", "sulfite_declaration", "warning_text",
 )
 
-PROMPT = """You are extracting fields from a photo of an alcoholic beverage label \
-for a TTB compliance check. The applicant states this is a {beverage_type} label.
+PROMPT = """You are extracting fields from one or more photos of a SINGLE alcoholic \
+beverage label for a TTB compliance check. The applicant states this is a {beverage_type} label.
+If several images are provided, they are the same label from different angles or panels (for \
+example a front label and a back label, or a close-up of the small print); read each field from \
+whichever image shows it most clearly, and treat a field as present if it appears in ANY image.
 
 Return ONLY a JSON object, no other text, in exactly this shape:
 {{
@@ -118,18 +121,23 @@ def _to_extracted(data: dict) -> ExtractedLabel:
     )
 
 
-def _build_content(image_bytes: bytes, media_type: str, beverage_type: BeverageType) -> list:
-    """One user turn: the label as an image (PNG/JPEG/WebP) or a document (PDF),
-    plus the extraction prompt. PDF goes in a document block so Claude reads its
-    rendered pages; everything else is an image block."""
+def _source_block(image_bytes: bytes, media_type: str) -> dict:
+    """A PDF becomes a document block (Claude reads its rendered pages); every
+    other supported type is an image block."""
     b64 = base64.b64encode(image_bytes).decode()
     if media_type == "application/pdf":
-        source = {"type": "document", "source": {
+        return {"type": "document", "source": {
             "type": "base64", "media_type": "application/pdf", "data": b64}}
-    else:
-        source = {"type": "image", "source": {
-            "type": "base64", "media_type": media_type, "data": b64}}
-    return [source, {"type": "text", "text": PROMPT.format(beverage_type=beverage_type.value)}]
+    return {"type": "image", "source": {
+        "type": "base64", "media_type": media_type, "data": b64}}
+
+
+def _build_content(images: list[tuple[bytes, str]], beverage_type: BeverageType) -> list:
+    """One user turn: a block for each image of the label, then the extraction
+    prompt. Multiple images are treated as the same label from different angles."""
+    blocks = [_source_block(b, mt) for b, mt in images]
+    blocks.append({"type": "text", "text": PROMPT.format(beverage_type=beverage_type.value)})
+    return blocks
 
 
 class ClaudeVisionExtractor(VisionExtractor):
@@ -142,7 +150,12 @@ class ClaudeVisionExtractor(VisionExtractor):
     def extract(
         self, image_bytes: bytes, media_type: str, beverage_type: BeverageType
     ) -> ExtractedLabel:
-        content = _build_content(image_bytes, media_type, beverage_type)
+        return self.extract_many([(image_bytes, media_type)], beverage_type)
+
+    def extract_many(
+        self, images: list[tuple[bytes, str]], beverage_type: BeverageType
+    ) -> ExtractedLabel:
+        content = _build_content(images, beverage_type)
         last_error = None
         for _ in range(2):  # one retry on malformed JSON only
             try:

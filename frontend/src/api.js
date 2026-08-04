@@ -1,6 +1,6 @@
-export async function verifyLabel(imageFile, expected) {
+export async function verifyLabel(imageFiles, expected) {
   const form = new FormData();
-  form.append("image", imageFile);
+  for (const f of imageFiles) form.append("images", f);
   for (const [key, value] of Object.entries(expected)) {
     if (value !== null && value !== undefined && value !== "") {
       form.append(key, value);
