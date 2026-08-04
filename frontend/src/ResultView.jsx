@@ -59,53 +59,55 @@ export default function ResultView({ result }) {
         ))}
       </ul>
 
-      {result.field_matches.length > 0 && (
-        <>
-          <h3>Field by field</h3>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Field</th>
-                <th scope="col">Result</th>
-                <th scope="col">Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.field_matches.map((m) => (
-                <tr key={m.field} className={`status-${m.status}`}>
-                  <th scope="row">{FIELD_LABELS[m.field] || m.field}</th>
-                  <td>{MATCH_WORDS[m.status] || m.status}</td>
-                  <td>{m.reason}</td>
+      <div className="result-tables">
+        {result.field_matches.length > 0 && (
+          <div>
+            <h3>Field by field</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col">Result</th>
+                  <th scope="col">Details</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+              </thead>
+              <tbody>
+                {result.field_matches.map((m) => (
+                  <tr key={m.field} className={`status-${m.status}`}>
+                    <th scope="row">{FIELD_LABELS[m.field] || m.field}</th>
+                    <td>{MATCH_WORDS[m.status] || m.status}</td>
+                    <td>{m.reason}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {result.warning.checks.length > 0 && (
-        <>
-          <h3>Government warning checks</h3>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Check</th>
-                <th scope="col">Result</th>
-                <th scope="col">Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.warning.checks.map((c) => (
-                <tr key={c.name} className={`status-${c.status}`}>
-                  <th scope="row">{c.name}</th>
-                  <td>{CHECK_WORDS[c.status] || c.status}</td>
-                  <td>{c.detail}</td>
+        {result.warning.checks.length > 0 && (
+          <div>
+            <h3>Government warning checks</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Check</th>
+                  <th scope="col">Result</th>
+                  <th scope="col">Details</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+              </thead>
+              <tbody>
+                {result.warning.checks.map((c) => (
+                  <tr key={c.name} className={`status-${c.status}`}>
+                    <th scope="row">{c.name}</th>
+                    <td>{CHECK_WORDS[c.status] || c.status}</td>
+                    <td>{c.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
