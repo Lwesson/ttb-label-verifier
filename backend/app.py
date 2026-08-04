@@ -17,6 +17,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from ttb.imageprep import UnsupportedUpload, prepare_upload
 from ttb.models import BeverageType, ExpectedValues
 from ttb.normalize import parse_net_contents
 from ttb.verdict import verify
@@ -26,7 +27,6 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=True)
 
 app = FastAPI(title="TTB Label Verifier")
 
-ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp"}
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_BATCH_ROWS = 400
 _TRUTHY = {"true", "1", "yes", "y"}
@@ -82,22 +82,21 @@ async def verify_label(
     is_import: bool = Form(False),
     extractor: VisionExtractor = Depends(get_extractor),
 ):
-    if image.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail="Please upload a PNG, JPEG, or WebP image of the label.",
-        )
     data = await image.read()
     if not data:
         raise HTTPException(
             status_code=400,
-            detail="The uploaded image is empty. Please try adding it again.",
+            detail="The uploaded file is empty. Please try adding it again.",
         )
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(
             status_code=400,
-            detail="That image is larger than 10 MB. Please upload a smaller photo.",
+            detail="That file is larger than 10 MB. Please upload a smaller one.",
         )
+    try:
+        prepared, media_type = prepare_upload(data, image.content_type, image.filename)
+    except UnsupportedUpload as e:
+        raise HTTPException(status_code=400, detail=str(e))
     try:
         bt = BeverageType(beverage_type)
     except ValueError:
@@ -125,7 +124,7 @@ async def verify_label(
         # Offload the blocking vision call so one worker can serve many
         # concurrent single-label requests instead of serializing on the
         # event loop (the batch path already does this).
-        extraction = await asyncio.to_thread(extractor.extract, data, image.content_type, bt)
+        extraction = await asyncio.to_thread(extractor.extract, prepared, media_type, bt)
     except ExtractionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     result = verify(expected, extraction)
@@ -192,7 +191,7 @@ async def verify_batch(
         data = await up.read()
         name = Path(up.filename or "").name
         if name:
-            image_map[name] = (data, up.content_type or "image/png")
+            image_map[name] = (data, up.content_type)
 
     sem = asyncio.Semaphore(int(os.environ.get("TTB_BATCH_CONCURRENCY", "8")))
 
@@ -211,11 +210,15 @@ async def verify_batch(
             return {"type": "result", "filename": filename, "error": "The uploaded image is empty."}
         if len(data) > MAX_IMAGE_BYTES:
             return {"type": "result", "filename": filename, "error": "Image is larger than 10 MB."}
+        try:
+            prepared, prepared_type = prepare_upload(data, media_type, filename)
+        except UnsupportedUpload as e:
+            return {"type": "result", "filename": filename, "error": str(e)}
         start = time.perf_counter()
         async with sem:
             try:
                 extraction = await asyncio.to_thread(
-                    extractor.extract, data, media_type, expected.beverage_type
+                    extractor.extract, prepared, prepared_type, expected.beverage_type
                 )
             except ExtractionError as e:
                 return {"type": "result", "filename": filename, "error": str(e)}

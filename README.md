@@ -135,7 +135,7 @@ Gaps in the brief that I filled, and how:
 
 1. **Application data is agent-provided.** COLA integration is out of scope, so "what the application says" comes from the form (single mode) or a manifest CSV (batch mode). In production these values would come from the system of record.
 2. **No image persistence.** Labels are processed in memory and never written to disk or stored; each request is ephemeral. This is a deliberate compliance posture, not an accident.
-3. **One label per image**, English text, PNG/JPEG/WebP up to 10 MB.
+3. **One label per file**, English text. Accepts PNG, JPEG, WebP, HEIC/HEIF, and PDF up to 10 MB; HEIC is converted to JPEG server-side and PDF pages are read directly.
 4. **Imports are flagged by the agent** (`is_import`), which switches on the country-of-origin requirement.
 5. **Bold and legibility are best-effort visual assessments** by the vision model and are always labeled as such in results.
 6. **Confidence thresholds** (when a read is trusted, when a label is unreadable) are judgment calls, kept tunable in `rules.py`, with the reasoning commented.
@@ -171,7 +171,7 @@ cd backend && python -m pytest -q
 ## API
 
 - `GET /api/health` -> `{"status": "ok"}`
-- `POST /api/verify` (multipart): `image` file + form fields `beverage_type` (distilled_spirits | wine | malt), `brand_name` (required), `class_type`, `abv_percent`, `net_contents`, `name_address`, `country_of_origin`, `is_import`. Returns the full verdict JSON with per-field results, warning sub-checks, and elapsed seconds.
+- `POST /api/verify` (multipart): `image` file (PNG, JPEG, WebP, HEIC, or PDF) + form fields `beverage_type` (distilled_spirits | wine | malt), `brand_name` (required), `class_type`, `abv_percent`, `net_contents`, `name_address`, `country_of_origin`, `is_import`. Returns the full verdict JSON with per-field results, warning sub-checks, and elapsed seconds.
 - `POST /api/verify-batch` (multipart): `manifest` CSV (columns: `filename, beverage_type, brand_name, class_type, abv_percent, net_contents, name_address, country_of_origin, is_import`) plus repeated `images` files. Streams NDJSON: a `start` line, one `result` line per label as it completes, and a `done` line with summary counts. Row-level problems come back as per-row errors and never abort the batch. Capped at 400 rows per request.
 
 ## License

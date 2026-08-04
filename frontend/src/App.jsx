@@ -20,7 +20,23 @@ const EMPTY_FORM = {
   is_import: false,
 };
 
-const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const ACCEPT_ATTR =
+  "image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,.heic,.heif";
+const ACCEPTED_EXT = [".png", ".jpg", ".jpeg", ".webp", ".heic", ".heif", ".pdf"];
+
+function isAccepted(f) {
+  // HEIC often arrives with an empty or wrong MIME type, so fall back to the
+  // file extension.
+  if (IMAGE_TYPES.includes(f.type)) return true;
+  if (["image/heic", "image/heif", "application/pdf"].includes(f.type)) return true;
+  const name = (f.name || "").toLowerCase();
+  return ACCEPTED_EXT.some((ext) => name.endsWith(ext));
+}
+
+function isPreviewable(f) {
+  return IMAGE_TYPES.includes(f.type);
+}
 
 export default function App() {
   const [mode, setMode] = useState("single");
@@ -39,8 +55,8 @@ export default function App() {
 
   function takeFile(f) {
     if (!f) return;
-    if (!ACCEPTED.includes(f.type)) {
-      setError("Please choose a PNG, JPEG, or WebP image of the label.");
+    if (!isAccepted(f)) {
+      setError("Please choose a PNG, JPEG, WebP, HEIC, or PDF file of the label.");
       return;
     }
     setError(null);
@@ -48,7 +64,7 @@ export default function App() {
     setFile(f);
     setPreviewUrl((old) => {
       if (old) URL.revokeObjectURL(old);
-      return URL.createObjectURL(f);
+      return isPreviewable(f) ? URL.createObjectURL(f) : null;
     });
   }
 
@@ -136,11 +152,17 @@ export default function App() {
           tabIndex={0}
           aria-label="Add a photo of the label"
         >
-          {previewUrl ? (
+          {file && previewUrl ? (
             <img src={previewUrl} alt="The label photo you added" className="preview" />
+          ) : file ? (
+            <p className="file-chosen">
+              <strong>{file.name}</strong>
+              <br />
+              ready to verify (no preview available for this file type)
+            </p>
           ) : (
             <p>
-              <strong>Click here to add the label photo</strong>
+              <strong>Click here to add the label (photo or PDF)</strong>
               <br />
               or drag and drop it into this box
             </p>
@@ -148,7 +170,7 @@ export default function App() {
           <input
             ref={inputRef}
             type="file"
-            accept={ACCEPTED.join(",")}
+            accept={ACCEPT_ATTR}
             hidden
             onChange={(e) => takeFile(e.target.files[0])}
           />

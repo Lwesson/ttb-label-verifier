@@ -5,7 +5,12 @@ from types import SimpleNamespace
 import pytest
 
 from ttb.models import BeverageType
-from ttb.vision.claude import ClaudeVisionExtractor, _parse_json, _to_extracted
+from ttb.vision.claude import (
+    ClaudeVisionExtractor,
+    _build_content,
+    _parse_json,
+    _to_extracted,
+)
 from ttb.vision.mock import MockExtractor
 
 from .fixtures import make_extraction
@@ -92,6 +97,20 @@ def test_claude_extractor_calls_api_and_parses(monkeypatch):
     content = captured["messages"][0]["content"]
     assert content[0]["type"] == "image"
     assert "distilled_spirits" in content[1]["text"]
+
+
+def test_build_content_image_block_for_png():
+    content = _build_content(b"imgbytes", "image/png", BeverageType.DISTILLED_SPIRITS)
+    assert content[0]["type"] == "image"
+    assert content[0]["source"]["media_type"] == "image/png"
+    assert "distilled_spirits" in content[1]["text"]
+
+
+def test_build_content_document_block_for_pdf():
+    content = _build_content(b"%PDF-1.4 bytes", "application/pdf", BeverageType.WINE)
+    assert content[0]["type"] == "document"
+    assert content[0]["source"]["media_type"] == "application/pdf"
+    assert "wine" in content[1]["text"]
 
 
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no API key")

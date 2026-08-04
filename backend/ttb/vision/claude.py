@@ -118,6 +118,20 @@ def _to_extracted(data: dict) -> ExtractedLabel:
     )
 
 
+def _build_content(image_bytes: bytes, media_type: str, beverage_type: BeverageType) -> list:
+    """One user turn: the label as an image (PNG/JPEG/WebP) or a document (PDF),
+    plus the extraction prompt. PDF goes in a document block so Claude reads its
+    rendered pages; everything else is an image block."""
+    b64 = base64.b64encode(image_bytes).decode()
+    if media_type == "application/pdf":
+        source = {"type": "document", "source": {
+            "type": "base64", "media_type": "application/pdf", "data": b64}}
+    else:
+        source = {"type": "image", "source": {
+            "type": "base64", "media_type": media_type, "data": b64}}
+    return [source, {"type": "text", "text": PROMPT.format(beverage_type=beverage_type.value)}]
+
+
 class ClaudeVisionExtractor(VisionExtractor):
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self.client = anthropic.Anthropic(
@@ -128,17 +142,7 @@ class ClaudeVisionExtractor(VisionExtractor):
     def extract(
         self, image_bytes: bytes, media_type: str, beverage_type: BeverageType
     ) -> ExtractedLabel:
-        content = [
-            {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": media_type,
-                    "data": base64.b64encode(image_bytes).decode(),
-                },
-            },
-            {"type": "text", "text": PROMPT.format(beverage_type=beverage_type.value)},
-        ]
+        content = _build_content(image_bytes, media_type, beverage_type)
         last_error = None
         for _ in range(2):  # one retry on malformed JSON only
             try:

@@ -159,7 +159,7 @@ export default function BatchView() {
             id="images"
             ref={imagesRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,.heic,.heif"
             multiple
             onChange={(e) => setImageFiles([...e.target.files])}
           />
