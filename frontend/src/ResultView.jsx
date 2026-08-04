@@ -32,8 +32,13 @@ const CHECK_WORDS = {
 
 export default function ResultView({ result }) {
   const meta = VERDICT_META[result.verdict] || VERDICT_META.unreadable;
+  const printedAt = new Date().toLocaleString();
   return (
     <section className={`result ${meta.className}`}>
+      <div className="print-header">
+        <strong>TTB Label Verification Result</strong>
+        <span className="print-date">{printedAt}</span>
+      </div>
       <h2>
         <span className="verdict-icon" aria-hidden="true">
           {meta.icon}
@@ -43,6 +48,10 @@ export default function ResultView({ result }) {
       {result.elapsed_seconds != null && (
         <p className="elapsed">Checked in {result.elapsed_seconds} seconds</p>
       )}
+
+      <button type="button" className="print-btn no-print" onClick={() => window.print()}>
+        Print or save as PDF
+      </button>
 
       <ul className="reasons">
         {result.reasons.map((r, i) => (

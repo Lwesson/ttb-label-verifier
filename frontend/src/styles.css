@@ -545,3 +545,76 @@ tr.status-review td {
   outline: 3px solid #0b57d0;
   outline-offset: 2px;
 }
+
+.print-btn {
+  margin: 4px 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border: 2px solid #0b57d0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0b57d0;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.print-btn:hover {
+  background: #eef4ff;
+}
+
+/* Only shown on the printed page, as the record's header. */
+.print-header {
+  display: none;
+}
+
+/* Print a clean one-page record: drop the app chrome, keep the result. */
+@media print {
+  h1,
+  .tabs,
+  .lede,
+  .form-card,
+  .result-placeholder,
+  .no-print {
+    display: none !important;
+  }
+
+  .single-grid {
+    display: block;
+  }
+
+  .page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .result {
+    margin: 0;
+    border: 1px solid #000 !important;
+  }
+
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+  }
+
+  .print-date {
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  tr.status-mismatch th,
+  tr.status-mismatch td,
+  tr.status-missing th,
+  tr.status-missing td,
+  tr.status-fail th,
+  tr.status-fail td,
+  tr.status-review th,
+  tr.status-review td {
+    background: transparent !important;
+  }
+}
