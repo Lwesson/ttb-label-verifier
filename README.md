@@ -4,6 +4,8 @@ An AI-assisted tool that verifies alcohol beverage labels against their applicat
 
 **Live demo:** https://ttb-label-verifier-production-2026.up.railway.app (kept warm, the first click loads instantly)
 
+![The One label screen: a sample bourbon passes, with the field-by-field comparison and the government warning checks side by side](docs/screenshots/single-pass.png)
+
 ## What it does
 
 Every label gets one of four verdicts, always shown as an icon, a word, and a color together:
@@ -100,6 +102,8 @@ Each requirement I heard in the stakeholder notes maps to something concrete in 
 | Janet's 200-300 label batches | Batch is a first-class flow: manifest upload, live progress, summary counts, a filter that defaults to only the labels needing attention, and a CSV export so the triage results can be acted on outside the tool. |
 | Bad photos: angle, glare, lighting (Jenny) | Per-field confidence, an UNREADABLE verdict, and trust gates: a warning that could not be read clearly yields "request a clearer photo," not a false violation. The degraded corpus proves each case, and several photos of one label can be submitted together so a clearer angle or close-up covers a field lost to glare or small print. |
 | "We value how you fill in gaps independently" | Every gap I filled is written down in the Assumptions section below. |
+
+![Catching a violation: a title-case Government Warning fails the capitalization check while the other fields still match](docs/screenshots/single-fail-warning.png)
 
 ## Validation rules
 
