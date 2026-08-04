@@ -13,7 +13,7 @@ body {
 }
 
 .page {
-  max-width: 1060px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 24px 16px 80px;
 }
@@ -21,7 +21,7 @@ body {
 .single-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 28px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -35,14 +35,72 @@ body {
   }
 }
 
-.result-placeholder {
-  padding: 28px 24px;
-  border: 2px dashed #c9c9c9;
-  border-radius: 12px;
+/* Left column: one clean card, so it reads as a single panel, not a stack
+   of boxes. The fieldset inside loses its own border to avoid a card in a card. */
+.form-card {
   background: #ffffff;
-  color: #555;
+  border: 1px solid #d9d9d6;
+  border-radius: 14px;
+  padding: 20px 22px 24px;
+}
+
+.form-card fieldset {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.form-card legend {
+  padding: 0;
+}
+
+.result-col {
+  min-width: 0;
+}
+
+.result-col .result,
+.result-col .error {
+  margin-top: 0;
+}
+
+/* Right column empty state: a matching card that balances the form and, while
+   it waits, shows what each result means in plain language. */
+.result-placeholder {
+  background: #ffffff;
+  border: 1px solid #d9d9d6;
+  border-radius: 14px;
+  padding: 22px 24px 26px;
+  color: #333;
+}
+
+.placeholder-lead {
+  margin: 0 0 16px;
   font-size: 1.1rem;
-  text-align: center;
+  font-weight: 600;
+}
+
+.verdict-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.verdict-legend li {
+  border-left: 6px solid;
+  background: #f7f7f4;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 1rem;
+}
+
+.verdict-legend b {
+  display: inline-block;
+  min-width: 118px;
+  font-size: 1.02rem;
 }
 
 .thumbs {
@@ -115,6 +173,7 @@ h1 {
 .lede {
   font-size: 1.1rem;
   margin-top: 0;
+  max-width: 68ch;
   color: #333;
 }
 

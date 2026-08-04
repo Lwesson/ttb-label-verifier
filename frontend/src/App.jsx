@@ -144,13 +144,13 @@ export default function App() {
       {mode === "batch" ? (
         <BatchView />
       ) : (
+        <>
+        <p className="lede">
+          Add one or more photos of the label (front, back, a close-up of the small
+          print), enter what the application says, then press Verify label.
+        </p>
         <div className="single-grid">
-          <div className="pane">
-            <p className="lede">
-              Add one or more photos of the label (front, back, a close-up of the
-              small print), enter what the application says, then press Verify label.
-            </p>
-
+          <div className="pane form-card">
             <form onSubmit={onSubmit} noValidate>
               <div
                 className={dragOver ? "dropzone dragover" : "dropzone"}
@@ -315,23 +315,29 @@ export default function App() {
             </form>
           </div>
 
-          <div className="pane result-pane" aria-live="polite">
-            {error && (
+          <div className="pane result-col" aria-live="polite">
+            {error ? (
               <div className="error" role="alert">
                 <strong>We hit a problem:</strong> {error}
               </div>
-            )}
-            {result ? (
+            ) : result ? (
               <ResultView result={result} />
             ) : (
-              !error && (
-                <p className="result-placeholder">
-                  Your result will appear here after you press Verify label.
+              <div className="result-placeholder">
+                <p className="placeholder-lead">
+                  Your result shows up here. Every label gets one of these:
                 </p>
-              )
+                <ul className="verdict-legend">
+                  <li className="verdict-pass"><b>&#10003; PASS</b> Looks good</li>
+                  <li className="verdict-review"><b>&#9888; REVIEW</b> A person should take a look</li>
+                  <li className="verdict-fail"><b>&#10007; FAIL</b> Problem found</li>
+                  <li className="verdict-unreadable"><b>? UNREADABLE</b> Photo too unclear, add a clearer one</li>
+                </ul>
+              </div>
             )}
           </div>
         </div>
+        </>
       )}
     </main>
   );
