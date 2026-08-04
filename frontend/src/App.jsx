@@ -29,7 +29,6 @@ const SAMPLE_VALUES = {
   class_type: "Kentucky Straight Bourbon Whiskey",
   abv_percent: "45",
   net_contents: "750 mL",
-  name_address: "Bottled by Ridge & Rye Distilling Co., Bardstown, KY",
 };
 
 const SAMPLES = {
@@ -113,6 +112,16 @@ export default function App() {
       return prev.filter((it) => it.id !== id);
     });
     setResult(null);
+  }
+
+  function reset() {
+    setItems((prev) => {
+      prev.forEach((it) => it.url && URL.revokeObjectURL(it.url));
+      return [];
+    });
+    setForm(EMPTY_FORM);
+    setResult(null);
+    setError(null);
   }
 
   async function loadSample(sample) {
@@ -366,6 +375,10 @@ export default function App() {
 
               <button type="submit" className="primary" disabled={loading}>
                 {loading ? "Checking the label..." : "Verify label"}
+              </button>
+
+              <button type="button" className="reset-btn" onClick={reset}>
+                Start over
               </button>
             </form>
           </div>
