@@ -20,6 +20,31 @@ const EMPTY_FORM = {
   is_import: false,
 };
 
+// One-click demo labels (bundled in public/samples) so a first-time visitor can
+// see a result without hunting for a bottle photo. Same application values; one
+// label matches (PASS), the other has a title-case warning (FAIL).
+const SAMPLE_VALUES = {
+  beverage_type: "distilled_spirits",
+  brand_name: "RIDGE & RYE",
+  class_type: "Kentucky Straight Bourbon Whiskey",
+  abv_percent: "45",
+  net_contents: "750 mL",
+  name_address: "Bottled by Ridge & Rye Distilling Co., Bardstown, KY",
+};
+
+const SAMPLES = {
+  pass: {
+    image: "/samples/clean_bourbon.png",
+    filename: "clean_bourbon.png",
+    values: SAMPLE_VALUES,
+  },
+  problem: {
+    image: "/samples/warning_title_case.png",
+    filename: "warning_title_case.png",
+    values: SAMPLE_VALUES,
+  },
+};
+
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const ACCEPT_ATTR =
   "image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf,.heic,.heif";
@@ -88,6 +113,24 @@ export default function App() {
       return prev.filter((it) => it.id !== id);
     });
     setResult(null);
+  }
+
+  async function loadSample(sample) {
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch(sample.image);
+      if (!res.ok) throw new Error("could not fetch sample");
+      const blob = await res.blob();
+      const file = new File([blob], sample.filename, { type: blob.type || "image/png" });
+      setItems((prev) => {
+        prev.forEach((it) => it.url && URL.revokeObjectURL(it.url));
+        return [{ id: ++_uid, file, url: URL.createObjectURL(file) }];
+      });
+      setForm({ ...EMPTY_FORM, ...sample.values });
+    } catch {
+      setError("Could not load the sample. Please upload a photo of the label instead.");
+    }
   }
 
   async function onSubmit(e) {
@@ -192,6 +235,18 @@ export default function App() {
                   }}
                 />
               </div>
+
+              <p className="sample-hint">
+                No label handy? Try{" "}
+                <button type="button" className="linklike" onClick={() => loadSample(SAMPLES.pass)}>
+                  a passing bourbon
+                </button>
+                {" or "}
+                <button type="button" className="linklike" onClick={() => loadSample(SAMPLES.problem)}>
+                  one with a title-case warning
+                </button>
+                .
+              </p>
 
               {items.length > 0 && (
                 <ul className="thumbs">

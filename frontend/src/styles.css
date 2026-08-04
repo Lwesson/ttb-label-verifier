@@ -443,6 +443,12 @@ tr.status-review td {
   padding: 0;
 }
 
+.sample-hint {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  color: #333;
+}
+
 .batch-pickers {
   display: grid;
   grid-template-columns: 1fr 1fr;
