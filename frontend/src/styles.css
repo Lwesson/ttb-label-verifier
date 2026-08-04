@@ -251,6 +251,17 @@ button:focus-visible {
   gap: 16px;
 }
 
+/* Keep the two inputs aligned even when one label wraps to two lines and the
+   other stays on one: labels sit at the top, inputs drop to a shared bottom. */
+.row > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.row > div input {
+  margin-top: auto;
+}
+
 @media (max-width: 540px) {
   .row {
     grid-template-columns: 1fr;
