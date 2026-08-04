@@ -166,7 +166,7 @@ def verify(
                 "reason": f"{m.reason}, but it was read with low confidence ({conf:.0%}). Please verify.",
             })
 
-    warning_result = validate_warning(extraction)
+    warning_result = validate_warning(extraction, th.warning_trust)
 
     # Trust gate: a warning violation is only a violation if the warning was
     # actually READ clearly. A garbled or invisible warning on a bad photo is

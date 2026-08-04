@@ -81,6 +81,26 @@ def test_bold_uncertainty_reviews_not_fails():
     assert r.status != CheckStatus.FAIL
 
 
+def test_formatting_not_assessed_when_warning_read_at_low_confidence():
+    # Warning read at low confidence (small real-photo print): the visual flags
+    # default to False and cannot be trusted, so bold and legibility are "not
+    # assessed" rather than shaky advisories, and the warning is not dragged to
+    # review on formatting the model could not actually see.
+    low_conf = ExtractedLabel(
+        warning_text=FieldExtraction(value=CANONICAL_WARNING, confidence=0.6),
+        warning_visual=WarningVisual(
+            prefix_bold=False,
+            contrasting_background=False,
+            separate_from_other_text=False,
+        ),
+        overall_readability=0.7,
+    )
+    r = validate_warning(low_conf)
+    assert by_name(r, "bold").status == CheckStatus.UNKNOWN
+    assert by_name(r, "legibility").status == CheckStatus.UNKNOWN
+    assert r.status == CheckStatus.PASS
+
+
 def test_legibility_review_on_poor_contrast():
     r = validate_warning(
         make(CANONICAL_WARNING, WarningVisual(prefix_bold=True, contrasting_background=False))
