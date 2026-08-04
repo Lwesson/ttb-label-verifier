@@ -152,7 +152,7 @@ The prototype calls the Anthropic API directly. The TTB team is on Azure (FedRAM
 
 Stated honestly, because the failure modes matter as much as the features:
 
-- **Bold detection is unreliable at small type sizes.** Vision models strongly associate all-caps GOVERNMENT WARNING with bold. The corpus documents the miss; the sub-check reports best-effort status rather than pretending certainty.
+- **Bold detection is unreliable at small type sizes.** Vision models strongly associate all-caps GOVERNMENT WARNING with bold, and on small or low-resolution print they cannot judge stroke thickness at all (they default to "not bold"). Because the signal is unreliable in both directions, the bold sub-check reviews for a human rather than failing the warning outright, so a statement with correct wording and capitalization is never rejected on a shaky bold guess. The corpus documents the residual miss.
 - **Physical type-size rules (minimum mm by container volume) cannot be measured from a photo** without a known physical scale. The tool checks relative legibility and says so, instead of faking a measurement.
 - **Vision LLMs can autocomplete text they know.** A model may "read" the canonical warning through blur because it knows what it should say. The trust gates (low confidence or low readability force REVIEW, never a confident verdict) and the literal-model choice contain this, and the residual risk is documented here on purpose.
 - **The corpus is synthetic.** Programmatic rendering controls every character, which is what makes the strict-text cases provable, but real-world label photography is messier than four degradation functions.

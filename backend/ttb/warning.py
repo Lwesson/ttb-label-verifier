@@ -71,9 +71,18 @@ def validate_warning(extraction: ExtractedLabel) -> WarningResult:
 
     v = extraction.warning_visual
     if v.prefix_bold is False:
+        # Bold is a best-effort visual judgment, and the model cannot reliably
+        # tell bold from regular weight on small or low-resolution print (it
+        # defaults to False when unsure). So a "not bold" reading reviews for a
+        # human rather than hard-failing a warning whose text and capitalization
+        # are otherwise correct. See 27 CFR 16.21.
         checks.append(WarningSubCheck(
-            name="bold", status=CheckStatus.FAIL,
-            detail="'GOVERNMENT WARNING' does not appear bold (best-effort visual check)",
+            name="bold", status=CheckStatus.REVIEW,
+            detail=(
+                "'GOVERNMENT WARNING' may not be bold. This is a best-effort visual "
+                "check that is unreliable on small or low-resolution print, so please "
+                "confirm by eye rather than treating it as an automatic violation."
+            ),
         ))
     elif v.prefix_bold is True and v.remainder_bold is True:
         checks.append(WarningSubCheck(
